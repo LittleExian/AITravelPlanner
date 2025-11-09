@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db.awqfrgpyyrvxmvvxzwwp.supabase.co:5432/postgres
+    username: postgres
+    password: password123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+jwt:
+  secret: ${JWT_SECRET:your_jwt_secret_key_here}
+  expiration: 86400000
+
+supabase:
+  url: https://awqfrgpyyrvxmvvxzwwp.supabase.co
+  jwt:
+    secret: jwt_secret_key_123456789
+  service:
+    role:
+      key: service_role_key_123456789
+
+logging:
+  level:
+    root: INFO
+    com.aitravelplanner: DEBUG
