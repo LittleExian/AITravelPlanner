@@ -6,7 +6,10 @@ import com.aitravelplanner.model.User;
 import com.aitravelplanner.service.TripService;
 import com.aitravelplanner.service.UserService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +18,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/trips")
 public class TripController {
-
+    private static final Logger logger = LoggerFactory.getLogger(TripController.class);
+    
     @Autowired
     private TripService tripService;
 
@@ -23,22 +27,61 @@ public class TripController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<?> createTrip(@Valid @RequestBody TripCreateRequest request) {
-        User currentUser = userService.getCurrentUser();
-        Trip trip = tripService.createTrip(currentUser.getId(), request);
-        return ResponseEntity.ok(trip);
+    public ResponseEntity<Trip> createTrip(@Valid @RequestBody TripCreateRequest request) {
+        try {
+            User currentUser = userService.getCurrentUser();
+            // 创建Trip对象并设置当前用户为行程所有者
+            Trip trip = new Trip();
+            trip.setUserId(currentUser.getId());
+            // 从request复制其他属性
+            trip.setTitle(request.getTitle());
+            trip.setDestination(request.getDestination());
+            trip.setStartDate(request.getStartDate());
+            trip.setEndDate(request.getEndDate());
+            trip.setDescription(request.getDescription());
+            trip.setTags(request.getTags());
+            trip.setCoverImage(request.getCoverImage());
+            trip.setPublic(request.isPublic());
+            
+            Trip createdTrip = tripService.createTrip(trip);
+            logger.info("用户 {} 成功创建行程: {}", currentUser.getEmail(), createdTrip.getId());
+            return ResponseEntity.ok(createdTrip);
+        } catch (Exception e) {
+            logger.error("创建行程失败: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserTrips(@PathVariable String userId) {
-        // 检查是否是当前用户或有权限访问
-        User currentUser = userService.getCurrentUser();
-        if (!currentUser.getId().equals(userId)) {
-            return ResponseEntity.status(403).body("无权限访问其他用户的行程");
+    public ResponseEntity<List<Trip>> getUserTrips(@PathVariable String userId) {
+        try {
+            // 获取当前认证用户
+            User currentUser = userService.getCurrentUser();
+            
+            // 日志记录当前用户和请求的用户ID
+            logger.info("获取行程请求 - 当前用户: {}, 请求用户ID: {}", 
+                        currentUser.getEmail(), userId);
+            
+            // 权限检查：用户只能查看自己的行程
+            if (currentUser.getId().equals(userId)) {
+                List<Trip> trips = tripService.getUserTrips(userId);
+                logger.info("成功获取到 {} 个行程", trips.size());
+                return ResponseEntity.ok(trips);
+            } else {
+                logger.warn("权限拒绝 - 用户 {} 尝试访问用户 {} 的行程", 
+                           currentUser.getId(), userId);
+                // 对于非自己的行程，只返回公开行程
+                List<Trip> publicTrips = tripService.getPublicTripsByUserId(userId);
+                return ResponseEntity.ok(publicTrips);
+            }
+        } catch (Exception e) {
+            logger.error("获取行程失败: {}", e.getMessage());
+            // 添加更详细的错误日志
+            if (e instanceof SecurityException || e.getMessage().contains("未认证")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        List<Trip> trips = tripService.getUserTrips(userId);
-        return ResponseEntity.ok(trips);
     }
 
     @GetMapping("/{tripId}")
@@ -93,7 +136,7 @@ public class TripController {
 
     @GetMapping("/public/search")
     public ResponseEntity<?> searchPublicTrips(@RequestParam String destination) {
-        List<Trip> trips = tripService.searchPublicTripsByDestination(destination);
+        List<Trip> trips = tripService.searchPublicTrips(destination);
         return ResponseEntity.ok(trips);
     }
 }

@@ -7,11 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TripService {
-    Trip createTrip(String userId, TripCreateRequest request);
+    Trip createTrip(Trip trip);
     List<Trip> getUserTrips(String userId);
+    List<Trip> getPublicTripsByUserId(String userId);
     Optional<Trip> getTripById(String tripId);
     Trip updateTrip(String tripId, Trip trip);
     void deleteTrip(String tripId);
     List<Trip> getPublicTrips();
-    List<Trip> searchPublicTripsByDestination(String destination);
+    List<Trip> searchPublicTrips(String destination);
 }

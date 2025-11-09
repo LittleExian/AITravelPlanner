@@ -1,11 +1,14 @@
 package com.aitravelplanner.security;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -17,41 +20,41 @@ public class JwtUtils {
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
 
+    private SecretKey getSigningKey() {
+        // 确保密钥至少32字节(256位)用于HS256
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
     public String generateJwtToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
 
-        // 使用Base64编码的密钥
-        byte[] keyBytes = jwtSecret.getBytes();
-
         return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(SignatureAlgorithm.HS256, keyBytes)
+                .subject(userPrincipal.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(getSigningKey())
                 .compact();
     }
 
     public String getUserNameFromJwtToken(String token) {
-        // 使用Base64编码的密钥
-        byte[] keyBytes = jwtSecret.getBytes();
-        return Jwts.parserBuilder().setSigningKey(keyBytes).build().parseClaimsJws(token)
-                .getBody().getSubject();
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
     }
 
     public boolean validateJwtToken(String authToken) {
         try {
-            // 使用Base64编码的密钥
-            byte[] keyBytes = jwtSecret.getBytes();
-            Jwts.parserBuilder().setSigningKey(keyBytes).build().parseClaimsJws(authToken);
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(authToken);
             return true;
-        } catch (SignatureException e) {
-            System.err.println("Invalid JWT signature: " + e.getMessage());
-        } catch (MalformedJwtException e) {
-            System.err.println("Invalid JWT token: " + e.getMessage());
-        } catch (ExpiredJwtException e) {
-            System.err.println("JWT token is expired: " + e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            System.err.println("JWT token is unsupported: " + e.getMessage());
+        } catch (JwtException e) {
+            System.err.println("JWT validation error: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.err.println("JWT claims string is empty: " + e.getMessage());
         }

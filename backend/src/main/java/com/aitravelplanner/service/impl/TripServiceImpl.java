@@ -18,21 +18,18 @@ public class TripServiceImpl implements TripService {
     private TripRepository tripRepository;
 
     @Override
-    public Trip createTrip(String userId, TripCreateRequest request) {
-        Trip trip = new Trip();
-        trip.setUserId(userId);
-        trip.setTitle(request.getTitle());
-        trip.setDestination(request.getDestination());
-        trip.setStartDate(request.getStartDate());
-        trip.setEndDate(request.getEndDate());
-        trip.setDescription(request.getDescription());
-        trip.setTags(request.getTags());
-        trip.setCoverImage(request.getCoverImage());
-        trip.setPublic(request.isPublic());
-        trip.setCreatedAt(new Date());
+    public Trip createTrip(Trip trip) {
+        // 确保设置创建和更新时间
+        if (trip.getCreatedAt() == null) {
+            trip.setCreatedAt(new Date());
+        }
         trip.setUpdatedAt(new Date());
-
         return tripRepository.save(trip);
+    }
+    
+    @Override
+    public List<Trip> getPublicTripsByUserId(String userId) {
+        return tripRepository.findByUserIdAndIsPublicTrue(userId);
     }
 
     @Override
@@ -75,7 +72,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
-    public List<Trip> searchPublicTripsByDestination(String destination) {
+    public List<Trip> searchPublicTrips(String destination) {
         return tripRepository.findByDestinationContainingAndIsPublicTrue(destination);
     }
 }

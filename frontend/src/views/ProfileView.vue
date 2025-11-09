@@ -68,13 +68,36 @@ const loadUserTrips = async () => {
   try {
     loading.value = true
     // 获取用户的行程列表
-    if (userStore.userInfo) {
+    if (userStore.userInfo && userStore.userInfo.id) {
+      console.log('使用用户ID获取行程:', userStore.userInfo.id)
       await tripStore.fetchUserTrips(userStore.userInfo.id)
-    }
-    userTrips.value = tripStore.trips
-    
-    // 如果没有行程数据，显示模拟数据
-    if (userTrips.value.length === 0) {
+      userTrips.value = tripStore.trips
+      
+      // 如果没有行程数据，显示模拟数据
+      if (userTrips.value.length === 0) {
+        userTrips.value = [
+          {
+            id: '1',
+            name: '北京三日游',
+            destination: '北京',
+            startDate: '2024-10-01',
+            endDate: '2024-10-03',
+            status: 'completed'
+          },
+          {
+            id: '2',
+            name: '三亚度假之旅',
+            destination: '三亚',
+            startDate: '2024-12-20',
+            endDate: '2024-12-25',
+            status: 'upcoming'
+          }
+        ]
+      }
+    } else {
+      console.error('用户信息或用户ID不存在')
+      ElMessage.warning('用户信息不完整，无法获取行程')
+      // 显示模拟数据
       userTrips.value = [
         {
           id: '1',
@@ -83,20 +106,27 @@ const loadUserTrips = async () => {
           startDate: '2024-10-01',
           endDate: '2024-10-03',
           status: 'completed'
-        },
-        {
-          id: '2',
-          name: '三亚度假之旅',
-          destination: '三亚',
-          startDate: '2024-12-20',
-          endDate: '2024-12-25',
-          status: 'upcoming'
         }
       ]
     }
-  } catch (error) {
-    ElMessage.error('加载行程列表失败')
+  } catch (error: any) {
     console.error('加载行程列表错误:', error)
+    if (error?.includes('403')) {
+      ElMessage.error('没有权限获取行程信息，请重新登录')
+      // 尝试重新获取用户信息
+      try {
+        await userStore.fetchProfile()
+        // 重新尝试获取行程
+        if (userStore.userInfo && userStore.userInfo.id) {
+          await tripStore.fetchUserTrips(userStore.userInfo.id)
+          userTrips.value = tripStore.trips
+        }
+      } catch (retryError) {
+        console.error('重试获取行程失败:', retryError)
+      }
+    } else {
+      ElMessage.error('加载行程列表失败')
+    }
   } finally {
     loading.value = false
   }

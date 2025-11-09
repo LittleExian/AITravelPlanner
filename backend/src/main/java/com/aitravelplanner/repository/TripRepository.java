@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface TripRepository extends MongoRepository<Trip, String> {
     List<Trip> findByUserId(String userId);
+    List<Trip> findByUserIdAndIsPublicTrue(String userId);
     List<Trip> findByIsPublicTrue();
     List<Trip> findByDestinationContainingAndIsPublicTrue(String destination);
 }

@@ -6,30 +6,29 @@ spring:
       # 添加连接超时和重试配置
       socket-timeout: 5000
       connect-timeout: 5000
-      # 添加调试日志
-      logging:
-        level:
-          org.mongodb.driver: DEBUG
-  # 允许应用在数据库连接失败时仍能启动，便于调试
+  
+  # MongoDB 驱动日志配置
+  logging:
+    level:
+      org.mongodb.driver: DEBUG
+  
+  # 允许应用在数据库连接失败时仍能启动,便于调试
   main:
     allow-bean-definition-overriding: true
-  # 添加数据源错误处理配置
-  datasource:
-    continue-on-error: true
+  
+  # SQL 初始化配置(新版本)
+  sql:
+    init:
+      continue-on-error: true
 
   application:
     name: AITravelPlanner
 
-  # 配置CORS
-  cors:
-    allowed-origins: "*"
-    allowed-methods: "GET, POST, PUT, DELETE, OPTIONS"
-    allowed-headers: "*"
-
 # JWT配置
 jwt:
-  secret: your-secret-key-change-in-production
-  expiration: 86400000  # 24小时（毫秒）
+  # ⚠️ 警告: 这个密钥太短了! HS256需要至少32个字符(256位)
+  secret: 9qpmEmG86SEStp7Q1Xc089U8zAfU4ZKOP1GAbKQvf4I=
+  expiration: 86400000  # 24小时(毫秒)
 
 # 应用程序配置
 server:
@@ -44,3 +43,9 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     doc-expansion: list
+
+# 日志配置
+logging:
+  level:
+    org.mongodb.driver: DEBUG
+    com.aitravelplanner: DEBUG

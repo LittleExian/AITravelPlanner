@@ -100,13 +100,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new RuntimeException("用户未认证");
+        }
+        
+        Object principal = authentication.getPrincipal();
         String email;
         if (principal instanceof UserDetails) {
             email = ((UserDetails) principal).getUsername();
         } else {
             email = principal.toString();
         }
+        
         return findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("用户未找到"));
     }
