@@ -2,79 +2,39 @@ package com.aitravelplanner.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
-        ErrorDetails errorDetails = new ErrorDetails(
-            new Date(),
-            ex.getMessage(),
-            request.getDescription(false)
-        );
-        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+                errors.put(error.getField(), error.getDefaultMessage()));
+        return ResponseEntity.badRequest().body(errors);
     }
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<?> handleBusinessException(BusinessException ex, WebRequest request) {
-        ErrorDetails errorDetails = new ErrorDetails(
-            new Date(),
-            ex.getMessage(),
-            request.getDescription(false)
-        );
-        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeExceptions(RuntimeException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.badRequest().body(error);
     }
 
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
-        ErrorDetails errorDetails = new ErrorDetails(
-            new Date(),
-            ex.getMessage(),
-            request.getDescription(false)
-        );
-        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    // 内部类：错误详情
-    private static class ErrorDetails {
-        private Date timestamp;
-        private String message;
-        private String details;
-
-        public ErrorDetails(Date timestamp, String message, String details) {
-            this.timestamp = timestamp;
-            this.message = message;
-            this.details = details;
-        }
-
-        public Date getTimestamp() {
-            return timestamp;
-        }
-
-        public void setTimestamp(Date timestamp) {
-            this.timestamp = timestamp;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public String getDetails() {
-            return details;
-        }
-
-        public void setDetails(String details) {
-            this.details = details;
-        }
+    public ResponseEntity<Map<String, String>> handleGenericExceptions(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "服务器内部错误");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

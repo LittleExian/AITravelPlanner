@@ -1,23 +1,20 @@
 package com.aitravelplanner.service.impl;
 
-import com.aitravelplanner.dto.LoginResponse;
-import com.aitravelplanner.dto.UserLoginRequest;
 import com.aitravelplanner.dto.UserRegisterRequest;
+import com.aitravelplanner.dto.UserResponse;
 import com.aitravelplanner.model.User;
 import com.aitravelplanner.repository.UserRepository;
-import com.aitravelplanner.security.JwtTokenProvider;
 import com.aitravelplanner.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
+import java.util.Optional;
 
 @Service
-@Transactional
 public class UserServiceImpl implements UserService {
 
     @Autowired
@@ -26,90 +23,91 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtTokenProvider tokenProvider;
-
     @Override
     public User registerUser(UserRegisterRequest request) {
-        // 检查用户名是否已存在
-        if (isUsernameExists(request.getUsername())) {
-            throw new RuntimeException("用户名已存在");
+        // 检查邮箱和用户名是否已存在
+        if (existsByEmail(request.getEmail())) {
+            throw new RuntimeException("该邮箱已被注册");
         }
-        
-        // 检查邮箱是否已存在
-        if (isEmailExists(request.getEmail())) {
-            throw new RuntimeException("邮箱已被注册");
+        if (existsByUsername(request.getUsername())) {
+            throw new RuntimeException("该用户名已被使用");
         }
 
-        // 创建新用户
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setNickname(request.getNickname());
         user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPreferences(new User.UserPreferences());
-        
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        user.setCreatedAt(new Date());
+        user.setUpdatedAt(new Date());
+        user.setActive(true);
+
         return userRepository.save(user);
     }
 
     @Override
-    public LoginResponse loginUser(UserLoginRequest request) {
-        // 认证用户
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                request.getUsername(),
-                request.getPassword()
-            )
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // 生成JWT令牌
-        String token = tokenProvider.generateToken(authentication);
-        
-        // 获取用户信息
-        User user = (User) authentication.getPrincipal();
-        
-        LoginResponse response = new LoginResponse();
-        response.setToken(token);
-        response.setUser(user);
-        
-        return response;
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("用户不存在"));
-    }
-    
-    @Override
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("用户不存在"));
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
     @Override
-    public User updateUser(User user) {
-        return userRepository.save(user);
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
     }
 
     @Override
-    public void deleteUser(String id) {
-        userRepository.deleteById(id);
-    }
-
-    @Override
-    public boolean isUsernameExists(String username) {
+    public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
     }
 
     @Override
-    public boolean isEmailExists(String email) {
-        return userRepository.existsByEmail(email);
+    public UserResponse getUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setAvatar(user.getAvatar());
+        response.setActive(user.isActive());
+        return response;
+    }
+
+    @Override
+    public User updateUser(String userId, User user) {
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 更新用户信息（不更新密码）
+        existingUser.setUsername(user.getUsername());
+        existingUser.setEmail(user.getEmail());
+        existingUser.setFullName(user.getFullName());
+        existingUser.setAvatar(user.getAvatar());
+        existingUser.setUpdatedAt(new Date());
+        
+        return userRepository.save(existingUser);
+    }
+
+    @Override
+    public void deleteUser(String userId) {
+        userRepository.deleteById(userId);
+    }
+
+    @Override
+    public User getCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email;
+        if (principal instanceof UserDetails) {
+            email = ((UserDetails) principal).getUsername();
+        } else {
+            email = principal.toString();
+        }
+        return findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("用户未找到"));
     }
 }

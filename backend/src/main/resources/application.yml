@@ -1,35 +1,46 @@
 spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/aitravelplanner
+      database: aitravelplanner
+      # 添加连接超时和重试配置
+      socket-timeout: 5000
+      connect-timeout: 5000
+      # 添加调试日志
+      logging:
+        level:
+          org.mongodb.driver: DEBUG
+  # 允许应用在数据库连接失败时仍能启动，便于调试
+  main:
+    allow-bean-definition-overriding: true
+  # 添加数据源错误处理配置
   datasource:
-    url: jdbc:postgresql://db.awqfrgpyyrvxmvvxzwwp.supabase.co:5432/postgres
-    username: postgres
-    password: password123
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
-  
+    continue-on-error: true
+
+  application:
+    name: AITravelPlanner
+
+  # 配置CORS
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    allowed-headers: "*"
+
+# JWT配置
+jwt:
+  secret: your-secret-key-change-in-production
+  expiration: 86400000  # 24小时（毫秒）
+
+# 应用程序配置
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
-jwt:
-  secret: ${JWT_SECRET:your_jwt_secret_key_here}
-  expiration: 86400000
-
-supabase:
-  url: https://awqfrgpyyrvxmvvxzwwp.supabase.co
-  jwt:
-    secret: jwt_secret_key_123456789
-  service:
-    role:
-      key: service_role_key_123456789
-
-logging:
-  level:
-    root: INFO
-    com.aitravelplanner: DEBUG
+# SpringDoc配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: list

@@ -1,17 +1,16 @@
 package com.aitravelplanner.dto;
 
-import lombok.Data;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.util.Date;
 import java.util.List;
 
 @Data
 public class TripCreateRequest {
-
-    @NotBlank(message = "行程名称不能为空")
-    private String name;
+    @NotBlank(message = "行程标题不能为空")
+    private String title;
 
     @NotBlank(message = "目的地不能为空")
     private String destination;
@@ -22,12 +21,8 @@ public class TripCreateRequest {
     @NotNull(message = "结束日期不能为空")
     private Date endDate;
 
-    @NotNull(message = "预算不能为空")
-    private Double budget;
-
-    @NotNull(message = "人数不能为空")
-    private Integer peopleCount;
-
-    private List<String> preferences;
     private String description;
+    private List<String> tags;
+    private String coverImage;
+    private boolean isPublic;
 }

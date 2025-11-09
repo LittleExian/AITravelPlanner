@@ -1,22 +1,27 @@
 package com.aitravelplanner.dto;
 
-import com.aitravelplanner.model.Budget;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-import jakarta.validation.constraints.NotNull;
 import java.util.Date;
 
 @Data
 public class ExpenseAddRequest {
+    @NotBlank(message = "费用名称不能为空")
+    private String name;
 
-    @NotNull(message = "日期不能为空")
-    private Date date;
-
-    @NotNull(message = "类别不能为空")
-    private Budget.ExpenseCategory category;
-
-    @NotNull(message = "金额不能为空")
+    @NotNull(message = "费用金额不能为空")
+    @Positive(message = "费用金额必须大于0")
     private Double amount;
 
+    @NotBlank(message = "费用类别不能为空")
+    private String category;
+
+    @NotNull(message = "费用日期不能为空")
+    private Date date;
+
     private String description;
+    private String receiptImage;
 }

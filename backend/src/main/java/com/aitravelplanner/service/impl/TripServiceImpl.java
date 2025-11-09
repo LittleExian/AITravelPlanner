@@ -6,13 +6,12 @@ import com.aitravelplanner.repository.TripRepository;
 import com.aitravelplanner.service.TripService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@Transactional
 public class TripServiceImpl implements TripService {
 
     @Autowired
@@ -22,25 +21,17 @@ public class TripServiceImpl implements TripService {
     public Trip createTrip(String userId, TripCreateRequest request) {
         Trip trip = new Trip();
         trip.setUserId(userId);
-        trip.setName(request.getName());
+        trip.setTitle(request.getTitle());
         trip.setDestination(request.getDestination());
         trip.setStartDate(request.getStartDate());
         trip.setEndDate(request.getEndDate());
-        trip.setBudget(request.getBudget());
-        trip.setPeopleCount(request.getPeopleCount());
-        trip.setPreferences(request.getPreferences());
         trip.setDescription(request.getDescription());
-        
-        // 设置行程状态
-        Date now = new Date();
-        if (now.after(request.getEndDate())) {
-            trip.setStatus(Trip.TripStatus.COMPLETED);
-        } else if (now.after(request.getStartDate())) {
-            trip.setStatus(Trip.TripStatus.ONGOING);
-        } else {
-            trip.setStatus(Trip.TripStatus.UPCOMING);
-        }
-        
+        trip.setTags(request.getTags());
+        trip.setCoverImage(request.getCoverImage());
+        trip.setPublic(request.isPublic());
+        trip.setCreatedAt(new Date());
+        trip.setUpdatedAt(new Date());
+
         return tripRepository.save(trip);
     }
 
@@ -50,42 +41,41 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
-    public Trip getTripById(String tripId) {
-        return tripRepository.findById(tripId)
-            .orElseThrow(() -> new RuntimeException("行程不存在"));
+    public Optional<Trip> getTripById(String tripId) {
+        return tripRepository.findById(tripId);
     }
 
     @Override
-    public Trip updateTrip(String userId, String tripId, Trip trip) {
-        // 验证行程是否属于当前用户
-        Trip existingTrip = getTripById(tripId);
-        if (!existingTrip.getUserId().equals(userId)) {
-            throw new RuntimeException("无权修改此行程");
-        }
-        
+    public Trip updateTrip(String tripId, Trip trip) {
+        Trip existingTrip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
         // 更新行程信息
-        existingTrip.setName(trip.getName());
+        existingTrip.setTitle(trip.getTitle());
         existingTrip.setDestination(trip.getDestination());
         existingTrip.setStartDate(trip.getStartDate());
         existingTrip.setEndDate(trip.getEndDate());
-        existingTrip.setBudget(trip.getBudget());
-        existingTrip.setPeopleCount(trip.getPeopleCount());
-        existingTrip.setPreferences(trip.getPreferences());
         existingTrip.setDescription(trip.getDescription());
-        existingTrip.setDays(trip.getDays());
+        existingTrip.setTags(trip.getTags());
+        existingTrip.setCoverImage(trip.getCoverImage());
+        existingTrip.setPublic(trip.isPublic());
         existingTrip.setUpdatedAt(new Date());
-        
+
         return tripRepository.save(existingTrip);
     }
 
     @Override
-    public void deleteTrip(String userId, String tripId) {
-        // 验证行程是否属于当前用户
-        Trip trip = getTripById(tripId);
-        if (!trip.getUserId().equals(userId)) {
-            throw new RuntimeException("无权删除此行程");
-        }
-        
-        tripRepository.deleteByUserIdAndId(userId, tripId);
+    public void deleteTrip(String tripId) {
+        tripRepository.deleteById(tripId);
+    }
+
+    @Override
+    public List<Trip> getPublicTrips() {
+        return tripRepository.findByIsPublicTrue();
+    }
+
+    @Override
+    public List<Trip> searchPublicTripsByDestination(String destination) {
+        return tripRepository.findByDestinationContainingAndIsPublicTrue(destination);
     }
 }

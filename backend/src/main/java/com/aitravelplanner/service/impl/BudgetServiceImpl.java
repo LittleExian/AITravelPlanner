@@ -1,133 +1,141 @@
 package com.aitravelplanner.service.impl;
 
-import com.aitravelplanner.exception.ResourceNotFoundException;
+import com.aitravelplanner.dto.ExpenseAddRequest;
 import com.aitravelplanner.model.Budget;
-import com.aitravelplanner.repository.BudgetRepository;
+import com.aitravelplanner.model.Expense;
+import com.aitravelplanner.model.Trip;
+import com.aitravelplanner.repository.TripRepository;
 import com.aitravelplanner.service.BudgetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class BudgetServiceImpl implements BudgetService {
 
     @Autowired
-    private BudgetRepository budgetRepository;
+    private TripRepository tripRepository;
 
     @Override
-    public Budget getBudgetByTravelPlanId(String travelPlanId) {
-        return budgetRepository.findByTripId(travelPlanId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found for travel plan: " + travelPlanId));
+    public Budget getTripBudget(String tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
+        // 如果预算为null，初始化一个新的预算
+        if (trip.getBudget() == null) {
+            Budget budget = new Budget();
+            budget.setTotalBudget(0.0);
+            budget.setAllocations(Map.of());
+            budget.setExpenses(new ArrayList<>());
+            budget.setSpentAmount(0.0);
+            budget.setRemainingAmount(0.0);
+            trip.setBudget(budget);
+            tripRepository.save(trip);
+        }
+
+        return trip.getBudget();
     }
 
     @Override
-    public Budget createBudget(Budget budget) {
-        budget.setId(UUID.randomUUID().toString());
-        return budgetRepository.save(budget);
-    }
+    public Expense addExpense(String tripId, ExpenseAddRequest request) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
 
-    @Override
-    public Budget updateBudget(String budgetId, Budget budget) {
-        Budget existingBudget = budgetRepository.findById(budgetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with id: " + budgetId));
-        
-        existingBudget.setAllocations(budget.getAllocations());
-        
-        return budgetRepository.save(existingBudget);
-    }
+        // 初始化预算（如果需要）
+        if (trip.getBudget() == null) {
+            trip.setBudget(new Budget());
+            trip.getBudget().setExpenses(new ArrayList<>());
+        }
 
-    @Override
-    public Budget getBudgetByTripId(String tripId) {
-        return budgetRepository.findByTripId(tripId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found for trip: " + tripId));
-    }
-    
-    @Override
-    public Budget addExpense(String tripId, Budget.Expense expense) {
-        Budget budget = getBudgetByTripId(tripId);
-        
+        // 创建新费用
+        Expense expense = new Expense();
         expense.setId(UUID.randomUUID().toString());
-        expense.setDate(LocalDateTime.now());
-        budget.getExpenses().add(expense);
-        
-        return budgetRepository.save(budget);
-    }
-    
-    @Override
-    public Budget deleteExpense(String tripId, String expenseId) {
-        Budget budget = getBudgetByTripId(tripId);
-        
-        boolean removed = budget.getExpenses().removeIf(expense -> expense.getId().equals(expenseId));
-        if (!removed) {
-            throw new ResourceNotFoundException("Expense not found with id: " + expenseId);
+        expense.setName(request.getName());
+        expense.setAmount(request.getAmount());
+        expense.setCategory(request.getCategory());
+        expense.setDate(request.getDate());
+        expense.setDescription(request.getDescription());
+        expense.setReceiptImage(request.getReceiptImage());
+
+        // 添加到费用列表
+        List<Expense> expenses = trip.getBudget().getExpenses();
+        if (expenses == null) {
+            expenses = new ArrayList<>();
         }
-        
-        return budgetRepository.save(budget);
+        expenses.add(expense);
+        trip.getBudget().setExpenses(expenses);
+
+        // 更新预算总额
+        updateBudgetTotals(tripId);
+
+        tripRepository.save(trip);
+        return expense;
     }
-    
+
     @Override
-    public Budget updateBudgetAllocations(String tripId, List<Budget.BudgetAllocation> allocations) {
-        Budget budget = getBudgetByTripId(tripId);
-        
-        budget.getAllocations().clear();
-        for (Budget.BudgetAllocation allocation : allocations) {
-            allocation.setId(UUID.randomUUID().toString());
-            budget.getAllocations().add(allocation);
+    public void deleteExpense(String tripId, String expenseId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
+        if (trip.getBudget() != null && trip.getBudget().getExpenses() != null) {
+            List<Expense> expenses = trip.getBudget().getExpenses();
+            boolean removed = expenses.removeIf(expense -> expense.getId().equals(expenseId));
+            
+            if (removed) {
+                updateBudgetTotals(tripId);
+                tripRepository.save(trip);
+            } else {
+                throw new RuntimeException("费用不存在");
+            }
         }
-        
-        return budgetRepository.save(budget);
     }
 
     @Override
-    public Budget removeExpense(String budgetId, String expenseId) {
-        Budget budget = budgetRepository.findById(budgetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with id: " + budgetId));
-        
-        boolean removed = budget.getExpenses().removeIf(expense -> expense.getId().equals(expenseId));
-        if (!removed) {
-            throw new ResourceNotFoundException("Expense not found with id: " + expenseId);
+    public Budget updateBudgetAllocations(String tripId, Map<String, Double> allocations) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
+        if (trip.getBudget() == null) {
+            trip.setBudget(new Budget());
         }
+
+        trip.getBudget().setAllocations(allocations);
         
-        return budgetRepository.save(budget);
+        // 计算总预算
+        Double totalBudget = allocations.values().stream().mapToDouble(Double::doubleValue).sum();
+        trip.getBudget().setTotalBudget(totalBudget);
+        
+        // 更新剩余金额
+        updateRemainingAmount(trip);
+
+        tripRepository.save(trip);
+        return trip.getBudget();
     }
 
     @Override
-    public List<Budget> getBudgetsByUserId(String userId) {
-        return budgetRepository.findByUserId(userId);
+    public void updateBudgetTotals(String tripId) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
+        if (trip.getBudget() != null && trip.getBudget().getExpenses() != null) {
+            // 计算已花费金额
+            Double spentAmount = trip.getBudget().getExpenses().stream()
+                    .mapToDouble(Expense::getAmount)
+                    .sum();
+            trip.getBudget().setSpentAmount(spentAmount);
+            
+            // 更新剩余金额
+            updateRemainingAmount(trip);
+        }
     }
 
-    @Override
-    public void deleteBudget(String budgetId) {
-        Budget budget = budgetRepository.findById(budgetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with id: " + budgetId));
-        
-        budgetRepository.delete(budget);
-    }
-
-    @Override
-    public double calculateTotalExpenses(String budgetId) {
-        Budget budget = budgetRepository.findById(budgetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with id: " + budgetId));
-        
-        return budget.getExpenses().stream()
-                .mapToDouble(Budget.Expense::getAmount)
-                .sum();
-    }
-
-    @Override
-    public double calculateRemainingBudget(String budgetId) {
-        Budget budget = budgetRepository.findById(budgetId)
-                .orElseThrow(() -> new ResourceNotFoundException("Budget not found with id: " + budgetId));
-        
-        double totalAllocation = budget.getAllocations().stream()
-                .mapToDouble(Budget.BudgetAllocation::getAmount)
-                .sum();
-        
-        double totalExpenses = calculateTotalExpenses(budgetId);
-        
-        return totalAllocation - totalExpenses;
+    private void updateRemainingAmount(Trip trip) {
+        Double totalBudget = trip.getBudget().getTotalBudget() != null ? trip.getBudget().getTotalBudget() : 0.0;
+        Double spentAmount = trip.getBudget().getSpentAmount() != null ? trip.getBudget().getSpentAmount() : 0.0;
+        trip.getBudget().setRemainingAmount(totalBudget - spentAmount);
     }
 }
