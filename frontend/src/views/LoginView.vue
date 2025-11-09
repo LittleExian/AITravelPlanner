@@ -8,7 +8,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const loginForm = ref({
-  username: '',
+  email: '',
   password: ''
 })
 
@@ -17,38 +17,26 @@ const showPassword = ref(false)
 
 // 添加测试账号信息
 const testAccount = {
-  username: 'test_user',
-  password: '123456'
+  email: 'test@example.com',
+  password: 'test123'
 }
 
 const handleLogin = async () => {
   // 表单验证
-  if (!loginForm.value.username || !loginForm.value.password) {
-    ElMessage.warning('请输入用户名和密码')
+  if (!loginForm.value.email || !loginForm.value.password) {
+    ElMessage.warning('请输入邮箱和密码')
     return
   }
 
   loading.value = true
   try {
-    // 模拟登录请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 模拟成功响应
-    const mockToken = 'mock-jwt-token-' + Date.now()
-    const mockUserInfo = {
-      id: '1',
-      username: loginForm.value.username,
-      email: `${loginForm.value.username}@example.com`
-    }
-    
-    // 保存用户信息和token
-    userStore.setToken(mockToken)
-    userStore.setUserInfo(mockUserInfo)
+    // 使用实际的API调用
+    await userStore.login(loginForm.value.email, loginForm.value.password)
     
     ElMessage.success('登录成功')
     router.push('/planner')
-  } catch (error) {
-    ElMessage.error('登录失败，请检查用户名和密码')
+  } catch (error: any) {
+    ElMessage.error(error || '登录失败，请检查邮箱和密码')
     console.error('登录错误:', error)
   } finally {
     loading.value = false
@@ -58,7 +46,7 @@ const handleLogin = async () => {
 // 添加测试登录功能
 const handleTestLogin = () => {
   // 填充测试账号信息
-  loginForm.value.username = testAccount.username
+  loginForm.value.email = testAccount.email
   loginForm.value.password = testAccount.password
   
   ElMessage.info('已填充测试账号信息')
@@ -95,10 +83,10 @@ const rules: Record<string, any[]> = {
       >
         <el-form-item>
           <el-input
-            v-model="loginForm.username"
-            placeholder="请输入用户名"
-            prefix-icon="User"
-            autocomplete="username"
+            v-model="loginForm.email"
+            placeholder="请输入邮箱"
+            prefix-icon="Message"
+            autocomplete="email"
           />
         </el-form-item>
         

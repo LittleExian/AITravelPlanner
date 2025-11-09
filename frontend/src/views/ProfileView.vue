@@ -68,7 +68,9 @@ const loadUserTrips = async () => {
   try {
     loading.value = true
     // 获取用户的行程列表
-    await tripStore.fetchTrips()
+    if (userStore.userInfo) {
+      await tripStore.fetchUserTrips(userStore.userInfo.id)
+    }
     userTrips.value = tripStore.trips
     
     // 如果没有行程数据，显示模拟数据
@@ -104,7 +106,15 @@ const handleUpdateProfile = async () => {
   try {
     // 在实际项目中，这里会调用API更新用户信息
     // 模拟更新成功
-    userStore.setUserInfo(userInfo)
+    if (userStore.userInfo) {
+      // 创建一个符合UserResponse类型的对象
+      const updatedUser = {
+        ...userStore.userInfo,
+        username: userInfo.username,
+        email: userInfo.email
+      }
+      userStore.setUserInfo(updatedUser)
+    }
     editMode.value = false
     ElMessage.success('个人信息更新成功')
   } catch (error) {

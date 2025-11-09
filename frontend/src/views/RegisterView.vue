@@ -2,14 +2,18 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
+import { useUserStore } from '../store'
 
 const router = useRouter()
+const userStore = useUserStore()
+const formRef = ref<InstanceType<typeof ElForm>>()
 
 const registerForm = reactive({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  fullName: ''
 })
 
 const loading = ref(false)
@@ -42,28 +46,38 @@ const rules: Record<string, any[]> = {
       },
       trigger: 'blur'
     }
+  ],
+  fullName: [
+    { required: true, message: '请输入姓名', trigger: 'blur' },
+    { min: 2, max: 50, message: '姓名长度在 2 到 50 个字符之间', trigger: 'blur' }
   ]
 }
 
 const handleRegister = async () => {
-  const formEl = document.querySelector('el-form') as any
-  formEl.validate(async (valid: boolean) => {
-    if (valid) {
-      loading.value = true
-      try {
-        // 模拟注册请求
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
-      } catch (error) {
-        ElMessage.error('注册失败，请稍后重试')
-        console.error('注册错误:', error)
-      } finally {
-        loading.value = false
+  if (formRef.value) {
+    formRef.value.validate(async (valid: boolean) => {
+      if (valid) {
+        loading.value = true
+        try {
+          // 使用实际的API调用
+          await userStore.register(
+            registerForm.username,
+            registerForm.email,
+            registerForm.password,
+            registerForm.fullName
+          )
+          
+          ElMessage.success('注册成功，请登录')
+          router.push('/login')
+        } catch (error: any) {
+          ElMessage.error(error || '注册失败，请稍后重试')
+          console.error('注册错误:', error)
+        } finally {
+          loading.value = false
+        }
       }
-    }
-  })
+    })
+  }
 }
 
 const goToLogin = () => {
@@ -90,6 +104,14 @@ const goToLogin = () => {
           <el-input
             v-model="registerForm.username"
             placeholder="请输入用户名"
+            prefix-icon="User"
+          />
+        </el-form-item>
+        
+        <el-form-item prop="fullName">
+          <el-input
+            v-model="registerForm.fullName"
+            placeholder="请输入姓名"
             prefix-icon="User"
           />
         </el-form-item>

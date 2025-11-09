@@ -34,7 +34,7 @@ public class JwtUtils {
     public String getUserNameFromJwtToken(String token) {
         // 使用Base64编码的密钥
         byte[] keyBytes = jwtSecret.getBytes();
-        return Jwts.parser().setSigningKey(keyBytes).parseClaimsJws(token)
+        return Jwts.parserBuilder().setSigningKey(keyBytes).build().parseClaimsJws(token)
                 .getBody().getSubject();
     }
 
@@ -42,7 +42,7 @@ public class JwtUtils {
         try {
             // 使用Base64编码的密钥
             byte[] keyBytes = jwtSecret.getBytes();
-            Jwts.parser().setSigningKey(keyBytes).parseClaimsJws(authToken);
+            Jwts.parserBuilder().setSigningKey(keyBytes).build().parseClaimsJws(authToken);
             return true;
         } catch (SignatureException e) {
             System.err.println("Invalid JWT signature: " + e.getMessage());

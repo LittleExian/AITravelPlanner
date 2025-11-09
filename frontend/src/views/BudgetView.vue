@@ -12,7 +12,7 @@ const tripName = ref('北京三日游') // 模拟行程名称
 const loading = ref(true)
 
 // 预算数据
-const budgets = ref<any[]>([])
+const budgets = ref<any>(null)
 const expenses = ref<any[]>([])
 
 // 添加费用对话框
@@ -48,7 +48,9 @@ const loadBudgetData = async () => {
   try {
     // 调用store获取预算数据
     await budgetStore.fetchBudget(tripId)
-    budgets.value = budgetStore.budgets[tripId] || []
+    if (budgetStore.budgets[tripId]) {
+      budgets.value = budgetStore.budgets[tripId]
+    }
     expenses.value = budgetStore.expenses[tripId] || []
     
     // 计算统计数据
@@ -62,8 +64,10 @@ const loadBudgetData = async () => {
 }
 
 const calculateBudgetStats = () => {
-  totalBudget.value = budgets.value.reduce((sum, item) => sum + item.amount, 0)
-  totalExpense.value = expenses.value.reduce((sum, item) => sum + item.amount, 0)
+  if (budgets.value && Array.isArray(budgets.value)) {
+    totalBudget.value = budgets.value.reduce((sum: number, item: any) => sum + item.amount, 0)
+  }
+  totalExpense.value = expenses.value.reduce((sum: number, item: any) => sum + item.amount, 0)
   remainingBudget.value = totalBudget.value - totalExpense.value
 }
 
@@ -109,7 +113,9 @@ const deleteExpense = (expenseId: string) => {
 
 // 获取预算使用百分比
 const getBudgetUsagePercentage = (category: string) => {
-  const categoryBudget = budgets.value.find(item => item.category === category)?.amount || 0
+  const categoryBudget = budgets.value && Array.isArray(budgets.value) 
+    ? budgets.value.find((item: any) => item.category === category)?.amount || 0 
+    : 0
   const categoryExpense = expenses.value
     .filter(item => item.category === category)
     .reduce((sum, item) => sum + item.amount, 0)
