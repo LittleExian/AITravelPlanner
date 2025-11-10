@@ -31,4 +31,5 @@ public class TripCreateRequest {
     private Double budgetAmount; // 预算金额
     private Integer peopleCount; // 同行人数
     private List<String> travelPreferences; // 旅行偏好
+    private String specialNeeds; // 特殊需求，用于AI生成行程
 }

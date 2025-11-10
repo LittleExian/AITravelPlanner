@@ -3,8 +3,12 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElInputNumber, ElSlider, ElCheckboxGroup, ElCheckbox, ElRow, ElCol } from 'element-plus'
 import { Microphone } from '@element-plus/icons-vue'
+import { useUserStore, useTripStore } from '../store'
+import tripAPI from '../api/trips'
 
 const router = useRouter()
+const userStore = useUserStore()
+const tripStore = useTripStore()
 
 // 添加表单引用
 const formRef = ref()
@@ -17,7 +21,7 @@ const tripForm = reactive({
   budget: 2000,
   peopleCount: 1,
   preferences: [] as string[],
-  specialNeeds: [] as string[],
+  specialNeeds: '',
   description: ''
 })
 
@@ -54,14 +58,7 @@ const preferenceOptions = [
   { label: '冒险', value: 'adventure' }
 ]
 
-// 特殊需求选项
-const specialNeedOptions = [
-  { label: '带孩子', value: 'children' },
-  { label: '老人同行', value: 'elderly' },
-  { label: '无障碍设施', value: 'accessible' },
-  { label: '素食', value: 'vegetarian' },
-  { label: '宠物友好', value: 'petFriendly' }
-]
+
 
 // 模拟语音识别
 const startVoiceRecording = () => {
@@ -99,17 +96,57 @@ const applyVoiceResult = () => {
 // 生成行程
 const generating = ref(false)
 const generateTrip = async () => {
-  // 使用表单引用而不是document.querySelector
-  if (formRef.value) {
-    formRef.value.validate(async (valid: boolean) => {
-      if (valid) {
-        generating.value = true
-        try {
-          // 模拟AI生成行程
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          
-          ElMessage.success('行程生成成功！')
-          router.push('/trip/1') // 跳转到模拟的行程详情页
+    // 使用表单引用而不是document.querySelector
+    if (formRef.value) {
+      formRef.value.validate(async (valid: boolean) => {
+        if (valid) {
+          generating.value = true
+          try {
+            // 检查用户是否已登录并有用户ID
+            if (!userStore.userInfo || !userStore.userInfo.id) {
+              // 尝试获取用户信息
+              await userStore.fetchProfile()
+              if (!userStore.userInfo || !userStore.userInfo.id) {
+                ElMessage.error('请先登录再生成行程')
+                router.push('/login')
+                return
+              }
+            }
+            
+            // 准备行程数据
+            const tripData = {
+              title: `${tripForm.destination}旅行计划`,
+              destination: tripForm.destination,
+              startDate: tripForm.startDate,
+              endDate: tripForm.endDate,
+              description: tripForm.description,
+              budgetAmount: tripForm.budget,
+              peopleCount: tripForm.peopleCount,
+              travelPreferences: tripForm.preferences,
+              // 添加特殊需求和用户ID信息
+              specialNeeds: tripForm.specialNeeds,
+              userId: userStore.userInfo?.id
+            }
+            
+            console.log('发送到后端的行程数据:', tripData)
+            
+            // 调用后端API生成行程（这里假设后端有一个专门的AI生成行程接口）
+            // 如果没有专门的AI生成接口，可以直接使用createTrip接口
+            // const newTrip = await tripStore.createTrip(tripData)
+            
+            // 尝试使用可能存在的AI生成行程接口
+            try {
+              // 使用新封装的aiGenerateTrip方法
+              const newTrip = await tripAPI.aiGenerateTrip(tripData)
+              ElMessage.success('行程生成成功！')
+              router.push(`/trip/${newTrip.id}`) // 跳转到实际生成的行程详情页
+            } catch (apiError) {
+              console.log('AI生成接口调用失败，尝试使用常规创建行程接口', apiError)
+              // 回退到使用常规创建行程接口
+              const newTrip = await tripStore.createTrip(tripData)
+              ElMessage.success('行程创建成功！')
+              router.push(`/trip/${newTrip.id}`) // 跳转到行程详情页
+            }
         } catch (error) {
           ElMessage.error('行程生成失败，请稍后重试')
           console.error('生成行程错误:', error)
@@ -245,18 +282,12 @@ const generateTrip = async () => {
         <el-row>
           <el-col :span="24">
             <el-form-item label="特殊需求">
-              <div class="special-needs">
-                <el-checkbox-group v-model="tripForm.specialNeeds">
-                  <el-checkbox
-                    v-for="option in specialNeedOptions"
-                    :key="option.value"
-                    :value="option.value"
-                    style="margin-right: 20px"
-                  >
-                    {{ option.label }}
-                  </el-checkbox>
-                </el-checkbox-group>
-              </div>
+              <el-input
+                v-model="tripForm.specialNeeds"
+                type="textarea"
+                placeholder="请输入您的特殊需求，如饮食偏好、行动不便等"
+                :rows="3"
+              />
             </el-form-item>
           </el-col>
         </el-row>

@@ -10,6 +10,8 @@ export interface TripCreateRequest {
   budgetAmount?: number;
   peopleCount?: number;
   travelPreferences?: string[];
+  specialNeeds?: string; // 特殊需求，用于AI生成行程
+  userId?: string; // 用户ID，后端需要
 }
 
 export interface Trip {
@@ -37,6 +39,15 @@ class TripAPI {
    */
   async createTrip(data: TripCreateRequest): Promise<Trip> {
     return apiClient.post('/trips', data);
+  }
+
+  /**
+   * AI生成行程
+   * @param data 行程规划信息
+   * @returns AI生成的行程信息，包含路线和预算
+   */
+  async aiGenerateTrip(data: TripCreateRequest): Promise<Trip> {
+    return apiClient.post('/trips/ai-generate', data);
   }
 
   /**
