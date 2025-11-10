@@ -42,7 +42,9 @@ public class TravelRouteServiceImpl implements TravelRouteService {
         existingRoute.setDayNumber(route.getDayNumber());
         existingRoute.setTransportation(route.getTransportation());
         existingRoute.setAttractions(route.getAttractions());
+        existingRoute.setAttractionDes(route.getAttractionDes());
         existingRoute.setRestaurants(route.getRestaurants());
+        existingRoute.setAccommodations(route.getAccommodations());
         existingRoute.setDescription(route.getDescription());
         existingRoute.setEstimatedCost(route.getEstimatedCost());
         existingRoute.setUpdatedAt(new Date());

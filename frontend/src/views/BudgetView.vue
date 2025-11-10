@@ -2,12 +2,12 @@
 import { ref, onMounted, reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElButton, ElTabs, ElTabPane, ElCard, ElForm, ElFormItem, ElInput, ElDatePicker, ElSelect, ElOption, ElDialog, ElTable, ElTableColumn, ElInputNumber, ElProgress, ElTag } from 'element-plus'
-import { useBudgetStore, useTripStore } from '../store'
+import { useTripStore } from '../store'
 import budgetAPI from '../api/budgets'
 
 const route = useRoute()
 const router = useRouter()
-const budgetStore = useBudgetStore()
+// const budgetStore = useBudgetStore()
 const tripStore = useTripStore()
 
 const tripId = route.params.tripId as string

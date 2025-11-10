@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElInputNumber, ElSlider, ElCheckboxGroup, ElCheckbox, ElRow, ElCol } from 'element-plus'
+import { ElMessage, ElInputNumber, ElSlider, ElRow, ElCol } from 'element-plus'
 import { Microphone } from '@element-plus/icons-vue'
 import { useUserStore, useTripStore } from '../store'
 import tripAPI from '../api/trips'

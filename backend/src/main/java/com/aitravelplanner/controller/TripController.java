@@ -157,11 +157,38 @@ public class TripController {
             }
             route.setAttractions(attractions);
             
+            // 模拟生成景点经纬度信息
+            List<Map<String, Object>> attractionDes = new ArrayList<>();
+            for (int j = 0; j < attractions.size(); j++) {
+                Map<String, Object> des = new HashMap<>();
+                des.put("name", attractions.get(j));
+                // 生成随机经纬度（模拟数据）
+                // 这里假设目的地是一个主要城市，我们生成该城市附近的随机坐标
+                double baseLat = 30.0 + (Math.random() - 0.5) * 2; // 基础纬度，可根据不同目的地调整
+                double baseLng = 120.0 + (Math.random() - 0.5) * 2; // 基础经度，可根据不同目的地调整
+                des.put("latitude", Math.round(baseLat * 1000000) / 1000000.0); // 保留6位小数
+                des.put("longitude", Math.round(baseLng * 1000000) / 1000000.0); // 保留6位小数
+                des.put("address", destination + "市某区某路" + j + "号");
+                attractionDes.add(des);
+            }
+            route.setAttractionDes(attractionDes);
+            
             // 模拟生成餐厅信息
             List<String> restaurants = new ArrayList<>();
             restaurants.add("当地特色餐厅" + i);
             restaurants.add("人气餐厅" + i);
             route.setRestaurants(restaurants);
+            
+            // 模拟生成住宿信息
+            List<String> accommodations = new ArrayList<>();
+            if (preferences != null && preferences.contains("豪华")) {
+                accommodations.add(destination + "五星级酒店" + i);
+            } else if (preferences != null && preferences.contains("经济型")) {
+                accommodations.add(destination + "经济型酒店" + i);
+            } else {
+                accommodations.add(destination + "商务酒店" + i);
+            }
+            route.setAccommodations(accommodations);
             
             // 模拟生成描述
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");

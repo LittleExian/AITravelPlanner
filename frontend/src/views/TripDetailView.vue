@@ -1,19 +1,118 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElButton, ElTabs, ElTabPane, ElCard, ElDivider, ElTag, ElEmpty, ElDialog, ElInput, ElForm, ElFormItem, ElSkeleton } from 'element-plus'
+import L from 'leaflet'
+// @ts-ignore - 忽略类型检查错误
 import routeAPI from '../api/routes'
+// @ts-ignore - 忽略类型检查错误
 import tripAPI from '../api/trips'
 
 const route = useRoute()
 const router = useRouter()
 
+// 先声明变量
 const tripId = route.params.id as string
 const trip = ref<any>(null)
 const routes = ref<any[]>([])
 const loading = ref(true)
 const activeTab = ref('timeline')
 const activeDayTab = ref('1') // 默认显示第一天
+const map = ref<any>(null)
+
+// 初始化地图
+const initMap = () => {
+  // 简化实现，避免类型错误
+  const mapElement = document.getElementById('trip-map');
+  if (!mapElement) return;
+  
+  // 清除现有的地图实例
+  if (map.value) {
+    map.value.remove();
+    map.value = null;
+  }
+  
+  // 创建新的地图实例
+  map.value = L.map('trip-map' as any).setView([39.9042, 116.4074], 12);
+  
+  // 添加地图图层
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map.value as any);
+  
+  // 获取当前选中天的路线数据
+  const currentRoute = routes.value.find((route: any) => route.dayNumber.toString() === activeDayTab.value);
+  if (!currentRoute || !map.value) return;
+  
+  const coordinates: any[] = [];
+  
+  // 使用后端提供的attractionDes数据添加景点标记
+  if (currentRoute.attractionDes && Array.isArray(currentRoute.attractionDes)) {
+    currentRoute.attractionDes.forEach((attraction: any) => {
+      if (attraction.latitude && attraction.longitude) {
+        const lat = parseFloat(attraction.latitude);
+        const lng = parseFloat(attraction.longitude);
+        coordinates.push([lat, lng]);
+        
+        // 使用类型断言避免类型错误
+        L.marker([lat, lng] as any)
+          .addTo(map.value as any)
+          .bindPopup(`<b>${attraction.name}</b><br>地址: ${attraction.address || '未知'}`);
+      }
+    });
+  }
+  
+  // 添加路线连线（如果有多个点）
+  if (coordinates.length > 1) {
+    const polyline = L.polyline(coordinates as any, {
+      color: '#409eff',
+      weight: 3,
+      opacity: 0.7,
+      dashArray: '10, 10'
+    }).addTo(map.value as any);
+    
+    // 调整地图视图以显示所有点
+    map.value.fitBounds(polyline.getBounds() as any, { padding: [20, 20] });
+  } else if (coordinates.length === 1) {
+    // 如果只有一个点，以该点为中心
+    map.value.setView(coordinates[0] as any, 15);
+  }
+}
+
+// 监听标签页变化，在切换到地图标签时初始化地图
+watch(activeTab, (newTab) => {
+  if (newTab === 'map' && trip.value) {
+    // 延迟初始化，确保DOM已经渲染
+    setTimeout(() => {
+      initMap();
+    }, 100);
+  }
+});
+
+// 监听天标签变化，更新地图显示
+watch(activeDayTab, () => {
+  if (activeTab.value === 'map' && map.value) {
+    initMap();
+  }
+});
+
+// 模拟地理位置数据（实际应用中应使用地理编码服务）
+const getLocation = (name: string) => {
+  // 简单的模拟数据，实际应用中应使用地图API进行地理编码
+  const mockLocations: Record<string, [number, number]> = {
+    '故宫博物院': [39.916345, 116.397155],
+    '天安门广场': [39.908722, 116.397504],
+    '颐和园': [39.999870, 116.275190],
+    '圆明园': [40.003132, 116.297114],
+    '全聚德烤鸭店': [39.910658, 116.397357],
+    '老北京炸酱面馆': [39.912804, 116.401248],
+    '海底捞火锅': [39.910069, 116.401811],
+    '绿茶餐厅': [39.915646, 116.398985]
+  }
+  
+  // 如果找不到对应位置，返回默认坐标（北京中心点附近）
+  return mockLocations[name] || [39.9042, 116.4074]
+}
 
 const newTag = ref('')
 
@@ -40,11 +139,13 @@ const editRouteForm = ref({
   transportation: '',
   attractions: [] as string[],
   restaurants: [] as string[],
+  accommodations: [] as string[],
   description: '',
   estimatedCost: 0
 })
 const newAttraction = ref('')
 const newRestaurant = ref('')
+const newAccommodation = ref('')
 
 onMounted(async () => {
   await loadTripData()
@@ -84,6 +185,18 @@ const loadTripData = async () => {
           activities.push({
             type: '餐饮',
             name: restaurant,
+            description: '',
+            address: ''
+          })
+        })
+      }
+      
+      // 添加住宿活动
+      if (route.accommodations && Array.isArray(route.accommodations)) {
+        route.accommodations.forEach((accommodation: string) => {
+          activities.push({
+            type: '住宿',
+            name: accommodation,
             description: '',
             address: ''
           })
@@ -140,6 +253,13 @@ const loadTripData = async () => {
     }
   } finally {
     loading.value = false
+    
+    // 加载数据完成后，检查是否需要初始化地图
+    if (activeTab.value === 'map' && trip.value) {
+      setTimeout(() => {
+        initMap();
+      }, 100);
+    }
   }
 }
 
@@ -248,6 +368,7 @@ const editRoute = (dayNumber: number) => {
       transportation: route.transportation || '',
       attractions: route.attractions || [],
       restaurants: route.restaurants || [],
+      accommodations: route.accommodations || [],
       description: route.description || '',
       estimatedCost: route.estimatedCost || 0
     }
@@ -260,6 +381,7 @@ const editRoute = (dayNumber: number) => {
       transportation: '',
       attractions: [],
       restaurants: [],
+      accommodations: [],
       description: '',
       estimatedCost: 0
     }
@@ -276,6 +398,7 @@ const saveEditRoute = async () => {
       transportation: editRouteForm.value.transportation,
       attractions: editRouteForm.value.attractions,
       restaurants: editRouteForm.value.restaurants,
+      accommodations: editRouteForm.value.accommodations,
       description: editRouteForm.value.description,
       estimatedCost: editRouteForm.value.estimatedCost
     }
@@ -332,6 +455,19 @@ const addRestaurant = () => {
 // 删除餐厅
 const removeRestaurant = (restaurant: string) => {
   editRouteForm.value.restaurants = editRouteForm.value.restaurants.filter(r => r !== restaurant)
+}
+
+// 添加住宿
+const addAccommodation = () => {
+  if (newAccommodation.value && !editRouteForm.value.accommodations.includes(newAccommodation.value)) {
+    editRouteForm.value.accommodations.push(newAccommodation.value)
+    newAccommodation.value = ''
+  }
+}
+
+// 删除住宿
+const removeAccommodation = (accommodation: string) => {
+  editRouteForm.value.accommodations = editRouteForm.value.accommodations.filter(a => a !== accommodation)
 }
 
 // 查看预算
@@ -594,11 +730,7 @@ const viewBudget = () => {
             
             <el-tab-pane label="地图视图" name="map">
               <div class="map-container">
-                <div class="map-placeholder">
-                  <i class="el-icon-map-location"></i>
-                  <h3>地图功能开发中</h3>
-                  <p>即将为您展示行程路线地图</p>
-                </div>
+                <div id="trip-map" style="height: 600px; width: 100%"></div>
               </div>
             </el-tab-pane>
             
@@ -724,6 +856,26 @@ const viewBudget = () => {
             v-model="newRestaurant"
             placeholder="输入餐厅后按回车添加"
             @keyup.enter.native="addRestaurant"
+            style="margin-top: 10px; width: 200px;"
+          />
+        </el-form-item>
+        
+        <el-form-item label="住宿">
+          <div class="tag-list">
+            <el-tag
+              v-for="accommodation in editRouteForm.accommodations"
+              :key="accommodation"
+              closable
+              @close="removeAccommodation(accommodation)"
+              class="mr-2 mb-2"
+            >
+              {{ accommodation }}
+            </el-tag>
+          </div>
+          <el-input
+            v-model="newAccommodation"
+            placeholder="输入住宿后按回车添加"
+            @keyup.enter.native="addAccommodation"
             style="margin-top: 10px; width: 200px;"
           />
         </el-form-item>
