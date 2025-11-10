@@ -15,6 +15,8 @@ public class User {
     private String email;
     private String password;  // 加密后的密码
     private String fullName;
+    private String phone;  // 电话号码
+    private String bio;  // 个人简介
     private Date createdAt;
     private Date updatedAt;
     private String avatar;

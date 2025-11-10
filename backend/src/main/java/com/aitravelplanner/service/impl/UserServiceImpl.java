@@ -38,6 +38,8 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
+        user.setPhone(request.getPhone());  // 设置手机号
+        // bio默认为空，可以在后续更新
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
         user.setActive(true);
@@ -72,6 +74,8 @@ public class UserServiceImpl implements UserService {
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setFullName(user.getFullName());
+        response.setPhone(user.getPhone());  // 设置手机号
+        response.setBio(user.getBio());  // 设置个人简介
         response.setCreatedAt(user.getCreatedAt());
         response.setAvatar(user.getAvatar());
         response.setActive(user.isActive());
@@ -87,6 +91,8 @@ public class UserServiceImpl implements UserService {
         existingUser.setUsername(user.getUsername());
         existingUser.setEmail(user.getEmail());
         existingUser.setFullName(user.getFullName());
+        existingUser.setPhone(user.getPhone());  // 更新手机号
+        existingUser.setBio(user.getBio());  // 更新个人简介
         existingUser.setAvatar(user.getAvatar());
         existingUser.setUpdatedAt(new Date());
         

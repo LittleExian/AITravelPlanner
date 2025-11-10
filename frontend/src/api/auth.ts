@@ -6,6 +6,7 @@ export interface UserRegisterRequest {
   email: string;
   password: string;
   fullName: string;
+  phone?: string;
 }
 
 export interface UserLoginRequest {
@@ -18,8 +19,10 @@ export interface UserResponse {
   username: string;
   email: string;
   fullName: string;
+  phone?: string | null;
+  bio?: string | null;
   createdAt: string;
-  avatar?: string;
+  avatar?: string | null;
   active: boolean;
 }
 

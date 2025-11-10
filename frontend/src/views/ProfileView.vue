@@ -1,37 +1,28 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElInput, ElButton, ElForm, ElFormItem, ElCard, ElAvatar, ElSwitch, ElMessageBox } from 'element-plus'
+import { ElMessage, ElInput, ElButton, ElForm, ElFormItem, ElCard, ElAvatar, ElMessageBox } from 'element-plus'
 import { useUserStore, useTripStore } from '../store'
+import authAPI from '../api/auth'
+import type { UserResponse } from '../api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 const tripStore = useTripStore()
 
 const userInfo = reactive({
+  id: '',
   username: '',
-  nickname: '',
+  fullName: '',
   email: '',
   phone: '',
   avatar: '',
-  bio: '',
-  preferences: {
-    notifications: true,
-    autoSync: true,
-    darkMode: false
-  }
+  bio: ''
 })
 
 const userTrips = ref<any[]>([])
 const loading = ref(true)
 const editMode = ref(false)
-const changePasswordDialogVisible = ref(false)
-
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
 
 onMounted(async () => {
   await loadUserData()
@@ -40,24 +31,41 @@ onMounted(async () => {
 
 const loadUserData = async () => {
   try {
-    // 在实际项目中，这里会从API获取用户信息
-    // 模拟用户数据
-    const mockUser = {  // 直接使用模拟数据，避免访问不存在的属性
-      id: '1',
-      username: 'traveler123',
-      nickname: '旅行爱好者',
-      email: 'traveler@example.com',
-      phone: '13800138000',
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      bio: '热爱旅行，探索世界的每一个角落',
-      preferences: {
-        notifications: true,
-        autoSync: true,
-        darkMode: false
+    // 从userStore获取真实用户数据
+    if (userStore.userInfo) {
+      console.log('使用真实用户数据:', userStore.userInfo)
+      
+      const storeUserInfo = userStore.userInfo as UserResponse;
+      // 映射API返回的数据到组件的userInfo对象
+      // 注意字段名称的对应关系
+      userInfo.id = storeUserInfo.id
+      userInfo.username = storeUserInfo.username || ''
+      userInfo.fullName = storeUserInfo.fullName || ''  // API返回的是fullName，这里映射到fullName
+      userInfo.email = storeUserInfo.email || ''
+      userInfo.phone = storeUserInfo.phone || ''  // 添加手机号字段映射
+      userInfo.bio = storeUserInfo.bio || ''  // 添加个人简介字段映射
+      userInfo.avatar = storeUserInfo.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'  // 默认头像
+    } else {
+      console.warn('用户信息不可用，尝试重新获取')
+      try {
+        // 尝试重新获取用户信息
+        await userStore.fetchProfile()
+        if (userStore.userInfo) {
+          const storeUserInfo = userStore.userInfo as UserResponse;
+          // 重新映射数据
+          userInfo.id = storeUserInfo.id
+          userInfo.username = storeUserInfo.username || ''
+          userInfo.fullName = storeUserInfo.fullName || ''  // 添加姓名字段映射
+          userInfo.email = storeUserInfo.email || ''
+          userInfo.phone = storeUserInfo.phone || ''  // 添加手机号字段映射
+          userInfo.bio = storeUserInfo.bio || ''  // 添加个人简介字段映射
+          userInfo.avatar = storeUserInfo.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+        }
+      } catch (retryError) {
+        console.error('重新获取用户信息失败:', retryError)
+        ElMessage.warning('无法获取用户信息，使用默认设置')
       }
     }
-    
-    Object.assign(userInfo, mockUser)
   } catch (error) {
     ElMessage.error('加载用户信息失败')
     console.error('加载用户信息错误:', error)
@@ -134,17 +142,20 @@ const loadUserTrips = async () => {
 
 const handleUpdateProfile = async () => {
   try {
-    // 在实际项目中，这里会调用API更新用户信息
-    // 模拟更新成功
-    if (userStore.userInfo) {
-      // 创建一个符合UserResponse类型的对象
-      const updatedUser = {
-        ...userStore.userInfo,
-        username: userInfo.username,
-        email: userInfo.email
-      }
-      userStore.setUserInfo(updatedUser)
+    // 调用API更新用户信息
+    const updateData = {
+      username: userInfo.username,
+      email: userInfo.email,
+      fullName: userInfo.fullName,  // 注意：nickname映射到fullName
+      phone: userInfo.phone || null,  // 添加手机号字段
+      bio: userInfo.bio || null  // 添加个人简介字段
     }
+    
+    const updatedUser = await authAPI.updateProfile(updateData)
+    
+    // 更新本地store中的用户信息
+    userStore.setUserInfo(updatedUser)
+    
     editMode.value = false
     ElMessage.success('个人信息更新成功')
   } catch (error) {
@@ -153,29 +164,7 @@ const handleUpdateProfile = async () => {
   }
 }
 
-const handleChangePassword = async () => {
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.warning('两次输入的新密码不一致')
-    return
-  }
-  
-  try {
-    // 在实际项目中，这里会调用API修改密码
-    // 模拟修改成功
-    ElMessage.success('密码修改成功')
-    changePasswordDialogVisible.value = false
-    
-    // 重置表单
-    Object.assign(passwordForm, {
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    })
-  } catch (error) {
-    ElMessage.error('密码修改失败')
-    console.error('密码修改错误:', error)
-  }
-}
+
 
 const handleDeleteTrip = async (tripId: string) => {
   try {
@@ -236,22 +225,7 @@ const getTripStatusColor = (status: string) => {
 }
 
 // 添加深色模式切换处理方法
-const handleDarkModeToggle = () => {
-  try {
-    // 只在浏览器环境中执行
-    if (typeof window !== 'undefined' && document) {
-      if (userInfo.preferences.darkMode) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      // 更新用户配置
-      handleUpdateProfile()
-    }
-  } catch (error) {
-    console.error('切换深色模式失败:', error)
-  }
-}
+
 </script>
 
 <template>
@@ -283,7 +257,7 @@ const handleDarkModeToggle = () => {
           <!-- 用户基本信息 -->
           <div class="user-info">
             <div class="info-row">
-              <h3>{{ userInfo.nickname }}</h3>
+              <h3>{{ userInfo.fullName || '未设置姓名' }}</h3>
               <el-button
                 v-if="!editMode"
                 type="primary"
@@ -291,13 +265,6 @@ const handleDarkModeToggle = () => {
                 size="small"
               >
                 编辑资料
-              </el-button>
-              <el-button
-                v-if="!editMode"
-                @click="changePasswordDialogVisible = true"
-                size="small"
-              >
-                修改密码
               </el-button>
             </div>
             
@@ -311,11 +278,11 @@ const handleDarkModeToggle = () => {
                   />
                 </el-form-item>
                 
-                <el-form-item label="昵称">
+                <el-form-item label="姓名">
                   <el-input
-                    v-model="userInfo.nickname"
+                    v-model="userInfo.fullName"
                     :disabled="!editMode"
-                    placeholder="昵称"
+                    placeholder="姓名"  
                   />
                 </el-form-item>
                 
@@ -337,13 +304,14 @@ const handleDarkModeToggle = () => {
                 </el-form-item>
                 
                 <el-form-item label="个人简介">
-                  <el-input
-                    v-model="userInfo.bio"
-                    :disabled="!editMode"
-                    type="textarea"
-                    placeholder="个人简介"
-                    :rows="2"
-                  />
+                    <el-input
+
+                      v-model="userInfo.bio"
+                      type="textarea"
+                      :disabled="!editMode"
+                      placeholder="个人简介"
+                      :rows="2"
+                    />
                 </el-form-item>
               </el-form>
             </div>
@@ -361,35 +329,7 @@ const handleDarkModeToggle = () => {
         </div>
       </el-card>
       
-      <!-- 偏好设置卡片 -->
-      <el-card shadow="hover" class="preferences-card">
-        <h3>偏好设置</h3>
-        <div class="preferences-list">
-          <div class="preference-item">
-            <span class="preference-label">接收通知</span>
-            <el-switch
-              v-model="userInfo.preferences.notifications"
-              @change="handleUpdateProfile"
-            />
-          </div>
-          
-          <div class="preference-item">
-            <span class="preference-label">自动同步数据</span>
-            <el-switch
-              v-model="userInfo.preferences.autoSync"
-              @change="handleUpdateProfile"
-            />
-          </div>
-          
-          <div class="preference-item">
-            <span class="preference-label">深色模式</span>
-            <el-switch
-              v-model="userInfo.preferences.darkMode"
-              @change="handleDarkModeToggle"
-            />
-          </div>
-        </div>
-      </el-card>
+
       
       <!-- 我的行程卡片 -->
       <el-card shadow="hover" class="trips-card">
@@ -469,39 +409,7 @@ const handleDarkModeToggle = () => {
       </div>
     </div>
     
-    <!-- 修改密码对话框 -->
-    <el-dialog title="修改密码" v-model="changePasswordDialogVisible" width="400px">
-      <el-form :model="passwordForm">
-        <el-form-item label="旧密码">
-          <el-input
-            v-model="passwordForm.oldPassword"
-            type="password"
-            placeholder="请输入旧密码"
-          />
-        </el-form-item>
-        
-        <el-form-item label="新密码">
-          <el-input
-            v-model="passwordForm.newPassword"
-            type="password"
-            placeholder="请输入新密码"
-          />
-        </el-form-item>
-        
-        <el-form-item label="确认密码">
-          <el-input
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            placeholder="请再次输入新密码"
-          />
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="changePasswordDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleChangePassword">确认修改</el-button>
-      </template>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -524,7 +432,6 @@ const handleDarkModeToggle = () => {
 }
 
 .profile-card,
-.preferences-card,
 .trips-card {
   margin-bottom: 30px;
   background-color: white;
@@ -591,24 +498,7 @@ const handleDarkModeToggle = () => {
   color: #303133;
 }
 
-.preferences-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
 
-.preference-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.preference-label {
-  font-size: 16px;
-  color: #606266;
-}
 
 .loading-state {
   padding: 20px 0;
