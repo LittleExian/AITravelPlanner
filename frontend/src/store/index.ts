@@ -153,6 +153,8 @@ export const useTripStore = defineStore('trip', {
       budgetAmount?: number;
       peopleCount?: number;
       travelPreferences?: string[];
+      specialNeeds?: string;
+      userId?: string;
     }) {
       this.loading = true
       this.error = null

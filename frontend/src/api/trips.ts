@@ -12,6 +12,7 @@ export interface TripCreateRequest {
   travelPreferences?: string[];
   specialNeeds?: string; // 特殊需求，用于AI生成行程
   userId?: string; // 用户ID，后端需要
+  tags?: string[]; // 行程标签
 }
 
 export interface Trip {

@@ -96,6 +96,15 @@ const formatDate = (dateString: string) => {
 
 <template>
   <div class="trips-container">
+    <!-- 背景装饰 -->
+    <div class="background-decoration">
+      <div class="decoration-circle circle-1"></div>
+      <div class="decoration-circle circle-2"></div>
+      <div class="floating-element element-1">🗺️</div>
+      <div class="floating-element element-2">✈️</div>
+      <div class="floating-element element-3">🏨</div>
+    </div>
+
     <div class="container">
       <div class="page-header">
         <div class="header-content">
@@ -261,13 +270,77 @@ const formatDate = (dateString: string) => {
 .trips-container {
   min-height: calc(100vh - 120px);
   background: linear-gradient(135deg, #f5f7fa 0%, #e4efe9 100%);
-  padding: 20px 0;
+  padding: 20px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 背景装饰 */
+.background-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  right: 5%;
+}
+
+.circle-2 {
+  width: 150px;
+  height: 150px;
+  bottom: 20%;
+  left: 8%;
+}
+
+.floating-element {
+  position: absolute;
+  font-size: 2rem;
+  animation: float 6s ease-in-out infinite;
+}
+
+.element-1 {
+  top: 15%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.element-2 {
+  top: 60%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.element-3 {
+  bottom: 10%;
+  right: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .page-header {
