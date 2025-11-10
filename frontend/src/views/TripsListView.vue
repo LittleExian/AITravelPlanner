@@ -59,8 +59,9 @@ const handleDeleteTrip = async (tripId: string) => {
       type: 'warning'
     })
     
-    // 在实际项目中，这里会调用API删除行程
-    // await tripStore.deleteTrip(tripId)
+    // 调用API删除行程
+    await tripStore.deleteTrip(tripId)
+    // 同步更新本地列表
     userTrips.value = userTrips.value.filter(trip => trip.id !== tripId)
     ElMessage.success('行程删除成功')
   } catch (error) {
