@@ -2,6 +2,7 @@
 import authAPI from './auth';
 import tripAPI from './trips';
 import budgetAPI from './budgets';
+import routeAPI from './routes';
 import apiClient from './axios';
 
 // 健康检查API
@@ -16,6 +17,7 @@ export {
   authAPI,
   tripAPI,
   budgetAPI,
+  routeAPI,
   healthAPI,
   apiClient
 };
@@ -24,6 +26,7 @@ export default {
   auth: authAPI,
   trips: tripAPI,
   budgets: budgetAPI,
+  routes: routeAPI,
   health: healthAPI,
   client: apiClient
 };

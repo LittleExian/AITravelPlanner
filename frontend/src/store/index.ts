@@ -3,19 +3,32 @@ import { defineStore } from 'pinia'
 import { authAPI, tripAPI, budgetAPI } from '../api'
 import type { UserResponse } from '../api/auth'
 import type { Trip } from '../api/trips'
-import type { Budget, Expense } from '../api/budgets'
+import type { Budget, Expense, ExpenseAddRequest } from '../api/budgets'
 
 // 用户状态管理
 export const useUserStore = defineStore('user', {
   state: () => ({
     userInfo: null as UserResponse | null,
     token: localStorage.getItem('token') || null,
+    userId: localStorage.getItem('userId') || null,
     loading: false,
     error: null as string | null
   }),
   actions: {
     setUserInfo(userInfo: UserResponse | null) {
       this.userInfo = userInfo
+      // 同时设置userId
+      if (userInfo) {
+        this.setUserId(userInfo.id)
+      }
+    },
+    setUserId(userId: string | null) {
+      this.userId = userId
+      if (userId) {
+        localStorage.setItem('userId', userId)
+      } else {
+        localStorage.removeItem('userId')
+      }
     },
     setToken(token: string | null) {
       this.token = token
@@ -61,7 +74,13 @@ export const useUserStore = defineStore('user', {
       this.error = null
       try {
         const userInfo = await authAPI.getProfile()
-        this.setUserInfo(userInfo)
+        
+        // 设置用户信息和userId
+        if (userInfo && userInfo.id) {
+          this.setUserId(userInfo.id)
+          this.setUserInfo(userInfo)
+        }
+        
         return userInfo
       } catch (error: any) {
         this.setError(error || '获取用户信息失败')
@@ -77,12 +96,14 @@ export const useUserStore = defineStore('user', {
     logout() {
       this.userInfo = null
       this.token = null
+      this.userId = null
       localStorage.removeItem('token')
+      localStorage.removeItem('userId')
     }
   },
   getters: {
     isAuthenticated(): boolean {
-      return !!this.token
+      return !!this.token && !!this.userId
     }
   }
 })
@@ -245,12 +266,7 @@ export const useBudgetStore = defineStore('budget', {
         this.loading = false
       }
     },
-    async addExpense(tripId: string, expenseData: {
-      category: string;
-      amount: number;
-      description: string;
-      date: string;
-    }) {
+    async addExpense(tripId: string, expenseData: ExpenseAddRequest) {
       this.loading = true
       this.error = null
       try {

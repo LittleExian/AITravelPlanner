@@ -2,6 +2,7 @@ import apiClient from './axios';
 
 // 类型定义
 export interface ExpenseAddRequest {
+  name: string;
   category: string;
   amount: number;
   description: string;
@@ -10,6 +11,7 @@ export interface ExpenseAddRequest {
 
 export interface Expense {
   id: string;
+  name: string;
   category: string;
   amount: number;
   description: string;

@@ -1,5 +1,6 @@
 package com.aitravelplanner.controller;
 
+import com.aitravelplanner.dto.BudgetAllocationRequest;
 import com.aitravelplanner.dto.ExpenseAddRequest;
 import com.aitravelplanner.model.Budget;
 import com.aitravelplanner.model.Expense;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -55,6 +57,16 @@ public class BudgetController {
             return ResponseEntity.ok("费用已删除");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("删除费用失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trip/{tripId}/allocations")
+    public ResponseEntity<?> createBudgetAllocations(@PathVariable String tripId, @Valid @RequestBody BudgetAllocationRequest request) {
+        try {
+            Budget budget = budgetService.createBudgetAllocations(tripId, request);
+            return ResponseEntity.ok(budget);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("创建预算分配失败: " + e.getMessage());
         }
     }
 

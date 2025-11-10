@@ -11,6 +11,7 @@ C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\HealthController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\TripController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\repository\UserRepository.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\BudgetAllocationRequest.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\BudgetController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\impl\UserServiceImpl.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\model\TravelRoute.java

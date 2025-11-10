@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElInput, ElButton, ElForm, ElFormItem, ElCard, ElAvatar, ElMessageBox } from 'element-plus'
-import { useUserStore, useTripStore } from '../store'
+import { ElMessage, ElInput, ElButton, ElForm, ElFormItem, ElCard, ElAvatar, ElMessageBox, ElDivider, ElTag } from 'element-plus'
+import { useUserStore } from '../store'
 import authAPI from '../api/auth'
 import type { UserResponse } from '../api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
-const tripStore = useTripStore()
 
 const userInfo = reactive({
   id: '',
@@ -20,17 +19,16 @@ const userInfo = reactive({
   bio: ''
 })
 
-const userTrips = ref<any[]>([])
-const loading = ref(true)
 const editMode = ref(false)
+const loading = ref(false)
 
 onMounted(async () => {
   await loadUserData()
-  await loadUserTrips()
 })
 
 const loadUserData = async () => {
   try {
+    loading.value = true
     // 从userStore获取真实用户数据
     if (userStore.userInfo) {
       console.log('使用真实用户数据:', userStore.userInfo)
@@ -69,72 +67,6 @@ const loadUserData = async () => {
   } catch (error) {
     ElMessage.error('加载用户信息失败')
     console.error('加载用户信息错误:', error)
-  }
-}
-
-const loadUserTrips = async () => {
-  try {
-    loading.value = true
-    // 获取用户的行程列表
-    if (userStore.userInfo && userStore.userInfo.id) {
-      console.log('使用用户ID获取行程:', userStore.userInfo.id)
-      await tripStore.fetchUserTrips(userStore.userInfo.id)
-      userTrips.value = tripStore.trips
-      
-      // 如果没有行程数据，显示模拟数据
-      if (userTrips.value.length === 0) {
-        userTrips.value = [
-          {
-            id: '1',
-            name: '北京三日游',
-            destination: '北京',
-            startDate: '2024-10-01',
-            endDate: '2024-10-03',
-            status: 'completed'
-          },
-          {
-            id: '2',
-            name: '三亚度假之旅',
-            destination: '三亚',
-            startDate: '2024-12-20',
-            endDate: '2024-12-25',
-            status: 'upcoming'
-          }
-        ]
-      }
-    } else {
-      console.error('用户信息或用户ID不存在')
-      ElMessage.warning('用户信息不完整，无法获取行程')
-      // 显示模拟数据
-      userTrips.value = [
-        {
-          id: '1',
-          name: '北京三日游',
-          destination: '北京',
-          startDate: '2024-10-01',
-          endDate: '2024-10-03',
-          status: 'completed'
-        }
-      ]
-    }
-  } catch (error: any) {
-    console.error('加载行程列表错误:', error)
-    if (error?.includes('403')) {
-      ElMessage.error('没有权限获取行程信息，请重新登录')
-      // 尝试重新获取用户信息
-      try {
-        await userStore.fetchProfile()
-        // 重新尝试获取行程
-        if (userStore.userInfo && userStore.userInfo.id) {
-          await tripStore.fetchUserTrips(userStore.userInfo.id)
-          userTrips.value = tripStore.trips
-        }
-      } catch (retryError) {
-        console.error('重试获取行程失败:', retryError)
-      }
-    } else {
-      ElMessage.error('加载行程列表失败')
-    }
   } finally {
     loading.value = false
   }
@@ -142,6 +74,7 @@ const loadUserTrips = async () => {
 
 const handleUpdateProfile = async () => {
   try {
+    loading.value = true
     // 调用API更新用户信息
     const updateData = {
       username: userInfo.username,
@@ -161,35 +94,9 @@ const handleUpdateProfile = async () => {
   } catch (error) {
     ElMessage.error('更新个人信息失败')
     console.error('更新个人信息错误:', error)
+  } finally {
+    loading.value = false
   }
-}
-
-
-
-const handleDeleteTrip = async (tripId: string) => {
-  try {
-    await ElMessageBox.confirm('确定要删除该行程吗？此操作不可恢复。', '确认删除', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    // 在实际项目中，这里会调用API删除行程
-    // await tripStore.deleteTrip(tripId)
-    userTrips.value = userTrips.value.filter(trip => trip.id !== tripId)
-    ElMessage.success('行程删除成功')
-  } catch (error) {
-    // 用户取消删除或其他错误
-    console.log('删除行程取消或失败')
-  }
-}
-
-const goToTripDetail = (tripId: string) => {
-  router.push(`/trip-detail/${tripId}`)
-}
-
-const goToBudget = (tripId: string) => {
-  router.push(`/budget/${tripId}`)
 }
 
 const handleAvatarUpload = (_uploadFile: any) => {
@@ -201,260 +108,275 @@ const handleAvatarUpload = (_uploadFile: any) => {
 }
 
 const logout = () => {
-  userStore.logout()
-  router.push('/login')
-  ElMessage.success('已成功退出登录')
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    userStore.logout()
+    router.push('/login')
+    ElMessage.success('已成功退出登录')
+  }).catch(() => {
+    // 用户取消操作
+  })
 }
 
-const getTripStatusText = (status: string) => {
-  const statusMap = {
-    upcoming: '即将开始',
-    ongoing: '进行中',
-    completed: '已完成'
-  }
-  return statusMap[status as keyof typeof statusMap] || status
+const cancelEdit = () => {
+  editMode.value = false
+  loadUserData()
+  ElMessage.info('已取消编辑')
 }
-
-const getTripStatusColor = (status: string) => {
-  const colorMap = {
-    upcoming: 'primary',
-    ongoing: 'success',
-    completed: 'info'
-  }
-  return colorMap[status as keyof typeof colorMap] || 'default'
-}
-
-// 添加深色模式切换处理方法
-
 </script>
 
 <template>
   <div class="profile-container">
     <div class="container">
-      <h2 class="page-title">个人中心</h2>
+      <!-- <div class="page-header">
+        <h2 class="page-title">个人中心</h2>
+        <p class="page-subtitle">管理您的个人信息和账户设置</p>
+      </div> -->
       
       <!-- 个人信息卡片 -->
-      <el-card shadow="hover" class="profile-card">
-        <div class="profile-header">
+      <el-card shadow="hover" class="profile-card" :loading="loading">
+        <template #header>
+          <div class="card-header">
+            <span class="card-title">个人信息</span>
+            <el-button
+              v-if="!editMode"
+              type="primary"
+              @click="editMode = true"
+              round
+            >
+            编辑资料
+            </el-button>
+          </div>
+        </template>
+        
+        <div class="profile-content">
           <!-- 头像区域 -->
           <div class="avatar-section">
-            <el-avatar :src="userInfo.avatar" size="large" class="user-avatar">
-              {{ userInfo.username?.charAt(0) || '游' }}
-            </el-avatar>
-            
-            <el-upload
-              v-if="editMode"
-              class="avatar-uploader"
-              :show-file-list="false"
-              :before-upload="handleAvatarUpload"
-            >
-              <el-button type="primary" icon="el-icon-upload" size="small">
-                更换头像
-              </el-button>
-            </el-upload>
-          </div>
-          
-          <!-- 用户基本信息 -->
-          <div class="user-info">
-            <div class="info-row">
-              <h3>{{ userInfo.fullName || '未设置姓名' }}</h3>
-              <el-button
-                v-if="!editMode"
-                type="primary"
-                @click="editMode = true"
-                size="small"
+            <div class="avatar-wrapper">
+              <el-avatar :src="userInfo.avatar" :size="120" class="user-avatar">
+                {{ userInfo.username?.charAt(0) || '游' }}
+              </el-avatar>
+              
+              <el-upload
+                v-if="editMode"
+                class="avatar-uploader"
+                :show-file-list="false"
+                :before-upload="handleAvatarUpload"
               >
-                编辑资料
-              </el-button>
+                <div class="avatar-overlay">
+                  <i class="el-icon-camera"></i>
+                  <span>更换头像</span>
+                </div>
+              </el-upload>
             </div>
             
-            <div class="info-content">
-              <el-form :model="userInfo" label-width="80px">
-                <el-form-item label="用户名">
+            <div class="avatar-info">
+              <h3 class="user-name">{{ userInfo.fullName || userInfo.username || '未设置姓名' }}</h3>
+              <p class="user-username">@{{ userInfo.username }}</p>
+              <el-tag v-if="userInfo.id" type="success" size="small">用户ID: {{ userInfo.id }}</el-tag>
+            </div>
+          </div>
+          
+          <el-divider />
+          
+          <!-- 用户详细信息 -->
+          <div class="user-details">
+            <el-form :model="userInfo" label-width="100px" label-position="left">
+              <div class="form-row">
+                <el-form-item label="用户名" class="form-item">
                   <el-input
                     v-model="userInfo.username"
                     :disabled="!editMode"
                     placeholder="用户名"
+                    :class="{ 'edit-mode': editMode }"
                   />
                 </el-form-item>
                 
-                <el-form-item label="姓名">
+                <el-form-item label="姓名" class="form-item">
                   <el-input
                     v-model="userInfo.fullName"
                     :disabled="!editMode"
                     placeholder="姓名"  
+                    :class="{ 'edit-mode': editMode }"
                   />
                 </el-form-item>
-                
-                <el-form-item label="邮箱">
+              </div>
+              
+              <div class="form-row">
+                <el-form-item label="邮箱" class="form-item">
                   <el-input
                     v-model="userInfo.email"
                     :disabled="!editMode"
                     type="email"
                     placeholder="邮箱"
+                    :class="{ 'edit-mode': editMode }"
                   />
                 </el-form-item>
                 
-                <el-form-item label="手机号">
+                <el-form-item label="手机号" class="form-item">
                   <el-input
                     v-model="userInfo.phone"
                     :disabled="!editMode"
                     placeholder="手机号"
+                    :class="{ 'edit-mode': editMode }"
                   />
                 </el-form-item>
-                
-                <el-form-item label="个人简介">
-                    <el-input
-
-                      v-model="userInfo.bio"
-                      type="textarea"
-                      :disabled="!editMode"
-                      placeholder="个人简介"
-                      :rows="2"
-                    />
-                </el-form-item>
-              </el-form>
-            </div>
+              </div>
+              
+              <el-form-item label="个人简介" class="form-item-full">
+                <el-input
+                  v-model="userInfo.bio"
+                  type="textarea"
+                  :disabled="!editMode"
+                  placeholder="个人简介"
+                  :rows="3"
+                  maxlength="200"
+                  show-word-limit
+                  :class="{ 'edit-mode': editMode }"
+                />
+              </el-form-item>
+            </el-form>
           </div>
-        </div>
-        
-        <!-- 保存/取消按钮 -->
-        <div v-if="editMode" class="action-buttons">
-          <el-button type="primary" @click="handleUpdateProfile">
-            保存修改
-          </el-button>
-          <el-button @click="editMode = false; loadUserData()">
-            取消
-          </el-button>
-        </div>
-      </el-card>
-      
-
-      
-      <!-- 我的行程卡片 -->
-      <el-card shadow="hover" class="trips-card">
-        <h3>我的行程</h3>
-        
-        <div v-if="loading" class="loading-state">
-          <el-skeleton :rows="3" animated />
-        </div>
-        
-        <div v-else>
-          <el-table :data="userTrips" style="width: 100%">
-            <el-table-column prop="name" label="行程名称">
-              <template #default="scope">
-                <span class="trip-name" @click="goToTripDetail(scope.row.id)">
-                  {{ scope.row.name }}
-                </span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column prop="destination" label="目的地" />
-            
-            <el-table-column label="时间">
-              <template #default="scope">
-                {{ scope.row.startDate }} 至 {{ scope.row.endDate }}
-              </template>
-            </el-table-column>
-            
-            <el-table-column prop="status" label="状态">
-              <template #default="scope">
-                <el-tag :type="getTripStatusColor(scope.row.status)">
-                  {{ getTripStatusText(scope.row.status) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            
-            <el-table-column label="操作" width="180">
-              <template #default="scope">
-                <el-button
-                  type="primary"
-                  text
-                  @click="goToTripDetail(scope.row.id)"
-                >
-                  查看详情
-                </el-button>
-                <el-button
-                  type="success"
-                  text
-                  @click="goToBudget(scope.row.id)"
-                >
-                  预算管理
-                </el-button>
-                <el-button
-                  type="danger"
-                  text
-                  @click="handleDeleteTrip(scope.row.id)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
           
-          <div v-if="userTrips.length === 0" class="empty-trips">
-            <el-empty description="暂无行程记录" />
-            <el-button type="primary" @click="router.push('/planner')">
-              创建第一个行程
+          <!-- 保存/取消按钮 -->
+          <div v-if="editMode" class="action-buttons">
+            <el-button 
+              type="primary" 
+              @click="handleUpdateProfile"
+              :loading="loading"
+              round
+            >
+              保存修改
+            </el-button>
+            <el-button 
+              @click="cancelEdit"
+              :disabled="loading"
+              round
+            >
+              取消
             </el-button>
           </div>
         </div>
       </el-card>
       
-      <!-- 退出登录按钮 -->
-      <div class="logout-section">
-        <el-button type="danger" @click="logout">
-          退出登录
-        </el-button>
+      <!-- 功能卡片 -->
+      <div class="function-cards">
+        <el-card shadow="hover" class="function-card">
+          <div class="function-content" @click="router.push('/trips')">
+            <div class="function-icon trips-icon">
+              <i class="el-icon-location-outline"></i>
+            </div>
+            <div class="function-info">
+              <h4>我的行程</h4>
+              <p>查看和管理您的行程计划</p>
+            </div>
+            <div class="function-arrow">
+              <i class="el-icon-arrow-right"></i>
+            </div>
+          </div>
+        </el-card>
+        
+        <el-card shadow="hover" class="function-card">
+          <div class="function-content" @click="logout">
+            <div class="function-icon logout-icon">
+              <i class="el-icon-switch-button"></i>
+            </div>
+            <div class="function-info">
+              <h4>退出登录</h4>
+              <p>安全退出您的账户</p>
+            </div>
+            <div class="function-arrow">
+              <i class="el-icon-arrow-right"></i>
+            </div>
+          </div>
+        </el-card>
       </div>
     </div>
-    
-
   </div>
 </template>
 
 <style scoped>
 .profile-container {
   min-height: calc(100vh - 120px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px 0;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: 0 20px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-top: 20px;
 }
 
 .page-title {
-  font-size: 28px;
-  margin-bottom: 30px;
+  font-size: 32px;
+  margin-bottom: 10px;
   color: #303133;
-  text-align: center;
+  font-weight: 600;
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.profile-card,
-.trips-card {
+.page-subtitle {
+  font-size: 16px;
+  color: #909399;
+  margin: 0;
+}
+
+.profile-card {
   margin-bottom: 30px;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: none;
 }
 
-.profile-header {
+.card-header {
   display: flex;
-  gap: 40px;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.profile-content {
+  padding: 30px;
 }
 
 .avatar-section {
   display: flex;
-  flex-direction: column;
+  gap: 30px;
   align-items: center;
-  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .user-avatar {
-  border: 3px solid #409eff;
-  cursor: pointer;
+  border: 4px solid #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
 }
 
@@ -462,86 +384,205 @@ const getTripStatusColor = (status: string) => {
   transform: scale(1.05);
 }
 
-.user-info {
+.avatar-uploader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 50%;
+}
+
+.avatar-overlay:hover {
+  opacity: 1;
+}
+
+.avatar-overlay i {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.avatar-overlay span {
+  font-size: 12px;
+}
+
+.avatar-info {
   flex: 1;
 }
 
-.info-row {
+.user-name {
+  font-size: 24px;
+  color: #303133;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.user-username {
+  font-size: 16px;
+  color: #909399;
+  margin: 0 0 12px 0;
+}
+
+.user-details {
+  margin-top: 20px;
+}
+
+.form-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 20px;
   margin-bottom: 20px;
 }
 
-.info-row h3 {
-  font-size: 24px;
-  color: #303133;
-  margin: 0;
+.form-item {
+  flex: 1;
 }
 
-.info-content {
+.form-item-full {
   width: 100%;
 }
 
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #606266;
+}
+
+:deep(.el-input.is-disabled .el-input__inner) {
+  background-color: #f5f7fa;
+  color: #909399;
+  border-color: #e4e7ed;
+}
+
+:deep(.el-input.edit-mode .el-input__inner) {
+  border-color: #409eff;
+  background-color: #f0f7ff;
+}
+
+:deep(.el-textarea.is-disabled .el-textarea__inner) {
+  background-color: #f5f7fa;
+  color: #909399;
+  border-color: #e4e7ed;
+}
+
+:deep(.el-textarea.edit-mode .el-textarea__inner) {
+  border-color: #409eff;
+  background-color: #f0f7ff;
+}
+
 .action-buttons {
-  margin-top: 20px;
+  margin-top: 30px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
 }
 
-.preferences-card h3,
-.trips-card h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 20px;
-  color: #303133;
+.function-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
 }
 
-
-
-.loading-state {
-  padding: 20px 0;
-}
-
-.trip-name {
-  color: #409eff;
+.function-card {
+  border-radius: 12px;
   cursor: pointer;
-  text-decoration: underline;
+  transition: all 0.3s ease;
+  border: none;
+  overflow: hidden;
 }
 
-.empty-trips {
-  text-align: center;
-  padding: 40px 0;
+.function-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
 }
 
-.empty-trips .el-button {
-  margin-top: 20px;
+.function-content {
+  display: flex;
+  align-items: center;
+  padding: 20px;
 }
 
-.logout-section {
-  text-align: center;
-  margin-top: 40px;
-  margin-bottom: 60px;
+.function-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  font-size: 24px;
+  color: white;
+}
+
+.trips-icon {
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+}
+
+.logout-icon {
+  background: linear-gradient(135deg, #f56c6c 0%, #e6a23c 100%);
+}
+
+.function-info {
+  flex: 1;
+}
+
+.function-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.function-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+}
+
+.function-arrow {
+  color: #c0c4cc;
+  font-size: 18px;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .profile-header {
+  .profile-content {
+    padding: 20px;
+  }
+  
+  .avatar-section {
     flex-direction: column;
-    align-items: center;
     text-align: center;
+    gap: 20px;
   }
   
-  .info-row {
+  .form-row {
     flex-direction: column;
-    gap: 15px;
+    gap: 0;
   }
   
-  .preference-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .function-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-title {
+    font-size: 28px;
   }
 }
 </style>

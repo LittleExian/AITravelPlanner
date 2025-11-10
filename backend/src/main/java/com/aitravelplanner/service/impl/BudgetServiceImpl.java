@@ -1,5 +1,6 @@
 package com.aitravelplanner.service.impl;
 
+import com.aitravelplanner.dto.BudgetAllocationRequest;
 import com.aitravelplanner.dto.ExpenseAddRequest;
 import com.aitravelplanner.model.Budget;
 import com.aitravelplanner.model.Expense;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -95,6 +97,45 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     @Override
+    public Budget createBudgetAllocations(String tripId, BudgetAllocationRequest request) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("行程不存在"));
+
+        if (trip.getBudget() == null) {
+            trip.setBudget(new Budget());
+        }
+
+        // 转换AllocationItem列表为Map<String, Double>进行存储
+        Map<String, Double> allocationMap = new HashMap<>();
+        if (request.getAllocations() != null) {
+            for (BudgetAllocationRequest.AllocationItem item : request.getAllocations()) {
+                allocationMap.put(item.getName(), item.getAmount());
+            }
+        }
+        
+        // 设置预算分配
+        trip.getBudget().setAllocations(allocationMap);
+        
+        // 设置总预算：通过allocation中的amount累加计算得出
+        Double totalBudget = allocationMap.values().stream().mapToDouble(Double::doubleValue).sum();
+        trip.getBudget().setTotalBudget(totalBudget);
+        
+        // 初始化其他预算信息
+        if (trip.getBudget().getExpenses() == null) {
+            trip.getBudget().setExpenses(new ArrayList<>());
+        }
+        
+        // 更新已花费金额
+        updateBudgetTotals(tripId);
+        
+        // 更新剩余金额
+        updateRemainingAmount(trip);
+
+        tripRepository.save(trip);
+        return trip.getBudget();
+    }
+
+    @Override
     public Budget updateBudgetAllocations(String tripId, Map<String, Double> allocations) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("行程不存在"));
@@ -103,11 +144,15 @@ public class BudgetServiceImpl implements BudgetService {
             trip.setBudget(new Budget());
         }
 
-        trip.getBudget().setAllocations(allocations);
+        // 覆盖现有分配
+        trip.getBudget().setAllocations(new HashMap<>(allocations));
         
-        // 计算总预算
+        // 设置总预算：通过allocation中的amount累加计算得出
         Double totalBudget = allocations.values().stream().mapToDouble(Double::doubleValue).sum();
         trip.getBudget().setTotalBudget(totalBudget);
+        
+        // 更新已花费金额
+        updateBudgetTotals(tripId);
         
         // 更新剩余金额
         updateRemainingAmount(trip);
@@ -128,8 +173,12 @@ public class BudgetServiceImpl implements BudgetService {
                     .sum();
             trip.getBudget().setSpentAmount(spentAmount);
             
-            // 更新剩余金额
-            updateRemainingAmount(trip);
+            // 直接更新剩余金额（remainingAmount = totalBudget - spentAmount）
+            Double totalBudget = trip.getBudget().getTotalBudget() != null ? trip.getBudget().getTotalBudget() : 0.0;
+            trip.getBudget().setRemainingAmount(totalBudget - spentAmount);
+            
+            // 保存更新后的trip对象到数据库
+            tripRepository.save(trip);
         }
     }
 

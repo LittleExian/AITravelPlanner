@@ -41,8 +41,9 @@ apiClient.interceptors.response.use(
       
       // 处理401未授权错误
       if (status === 401) {
-        // 清除token并跳转到登录页
+        // 清除token和userId并跳转到登录页
         localStorage.removeItem('token');
+        localStorage.removeItem('userId');
         window.location.href = '/login';
       }
       

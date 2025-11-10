@@ -25,6 +25,8 @@ export interface Trip {
   budgetAmount?: number;
   peopleCount?: number;
   travelPreferences?: string[];
+  tags?: string[];
+  preferences?: string[];
 }
 
 class TripAPI {

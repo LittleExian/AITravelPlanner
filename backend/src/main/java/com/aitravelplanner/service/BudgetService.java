@@ -1,5 +1,6 @@
 package com.aitravelplanner.service;
 
+import com.aitravelplanner.dto.BudgetAllocationRequest;
 import com.aitravelplanner.dto.ExpenseAddRequest;
 import com.aitravelplanner.model.Budget;
 import com.aitravelplanner.model.Expense;
@@ -11,5 +12,6 @@ public interface BudgetService {
     Expense addExpense(String tripId, ExpenseAddRequest request);
     void deleteExpense(String tripId, String expenseId);
     Budget updateBudgetAllocations(String tripId, Map<String, Double> allocations);
+    Budget createBudgetAllocations(String tripId, BudgetAllocationRequest request);
     void updateBudgetTotals(String tripId);
 }
