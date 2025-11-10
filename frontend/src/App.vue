@@ -31,11 +31,11 @@ const handleLogout = () => {
 <template>
   <div class="app-container">
     <!-- 导航栏 -->
-    <el-header v-if="showNavBar" height="60px">
+    <el-header v-if="showNavBar" height="70px" class="gradient-header">
       <div class="header-content">
         <div class="logo">
           <router-link to="/">
-            <h1>AI旅行规划助手</h1>
+            <h1 class="logo-gradient">AI旅行规划助手</h1>
           </router-link>
         </div>
         <el-menu
@@ -43,6 +43,9 @@ const handleLogout = () => {
           class="nav-menu"
           mode="horizontal"
           router
+          background-color="transparent"
+          text-color="rgba(255, 255, 255, 0.9)"
+          active-text-color="#ffffff"
         >
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item v-if="userStore.token" index="/planner">规划行程</el-menu-item>
@@ -104,16 +107,81 @@ body {
   padding: 0 20px;
 }
 
-.logo h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #409eff;
+.gradient-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.logo .logo-gradient {
+  font-size: 26px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
 }
 
 .nav-menu {
   flex: 1;
   margin: 0 40px;
+  border-bottom: none !important;
+}
+
+/* 修复导航菜单样式 */
+.nav-menu .el-menu-item {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  border-bottom: none !important;
+}
+
+.nav-menu .el-menu-item:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px;
+}
+
+.nav-menu .el-menu-item.is-active {
+  color: #ffffff !important;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px;
+  border-bottom: none !important;
+}
+
+/* 移除默认的下划线 */
+.nav-menu .el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom: none !important;
+}
+
+.user-actions .el-button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.user-actions .el-button--primary {
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0ff 100%);
+  border: none;
+  color: #667eea;
+}
+
+.user-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #e0e0ff 0%, #ffffff 100%);
+  transform: translateY(-1px);
+}
+
+.user-actions .el-button--default {
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #ffffff;
+}
+
+.user-actions .el-button--default:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .footer-content {

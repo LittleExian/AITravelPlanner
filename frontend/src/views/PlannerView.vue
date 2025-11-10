@@ -250,7 +250,7 @@ const generateTrip = async () => {
                   <el-checkbox
                     v-for="option in specialNeedOptions"
                     :key="option.value"
-                    :label="option.value"
+                    :value="option.value"
                     style="margin-right: 20px"
                   >
                     {{ option.label }}

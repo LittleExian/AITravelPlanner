@@ -321,7 +321,7 @@ const formatDate = (dateString: string) => {
   margin-bottom: 8px;
   color: #303133;
   font-weight: 600;
-  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -333,7 +333,7 @@ const formatDate = (dateString: string) => {
 }
 
 .create-trip-btn {
-  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
   padding: 12px 24px;
@@ -510,7 +510,7 @@ const formatDate = (dateString: string) => {
 
 .create-first-btn {
   margin-top: 20px;
-  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
   padding: 10px 20px;
