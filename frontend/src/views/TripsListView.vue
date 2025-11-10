@@ -23,45 +23,10 @@ const loadUserTrips = async () => {
       console.log('使用用户ID获取行程:', userStore.userInfo.id)
       await tripStore.fetchUserTrips(userStore.userInfo.id)
       userTrips.value = tripStore.trips
-      
-      // 如果没有行程数据，显示模拟数据
-      if (userTrips.value.length === 0) {
-        userTrips.value = [
-          {
-            id: '1',
-            title: '北京五日游',
-            destination: '北京',
-            startDate: '2023-10-01T00:00:00.000+00:00',
-            endDate: '2023-10-05T00:00:00.000+00:00',
-            description: '国庆节北京旅行',
-            tags: ['国庆', '旅行', '文化']
-          },
-          {
-            id: '2',
-            title: '三亚度假之旅',
-            destination: '三亚',
-            startDate: '2024-12-20T00:00:00.000+00:00',
-            endDate: '2024-12-25T00:00:00.000+00:00',
-            description: '冬季三亚阳光沙滩度假',
-            tags: ['冬季', '海滩', '度假']
-          }
-        ]
-      }
     } else {
       console.error('用户信息或用户ID不存在')
       ElMessage.warning('用户信息不完整，无法获取行程')
-      // 显示模拟数据
-      userTrips.value = [
-        {
-          id: '1',
-          title: '北京五日游',
-          destination: '北京',
-          startDate: '2023-10-01T00:00:00.000+00:00',
-          endDate: '2023-10-05T00:00:00.000+00:00',
-          description: '国庆节北京旅行',
-          tags: ['国庆', '旅行', '文化']
-        }
-      ]
+      userTrips.value = []
     }
   } catch (error: any) {
     console.error('加载行程列表错误:', error)
