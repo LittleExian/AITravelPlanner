@@ -56,11 +56,11 @@ export const useUserStore = defineStore('user', {
         this.loading = false
       }
     },
-    async register(username: string, email: string, password: string, fullName: string) {
+    async register(username: string, email: string, phone: string, password: string, fullName: string) {
       this.loading = true
       this.error = null
       try {
-        const user = await authAPI.register({ username, email, password, fullName })
+        const user = await authAPI.register({ username, email, password, fullName, phone })
         return user
       } catch (error: any) {
         this.setError(error || '注册失败')
