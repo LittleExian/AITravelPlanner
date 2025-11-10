@@ -176,9 +176,7 @@ public class BudgetServiceImpl implements BudgetService {
             // 直接更新剩余金额（remainingAmount = totalBudget - spentAmount）
             Double totalBudget = trip.getBudget().getTotalBudget() != null ? trip.getBudget().getTotalBudget() : 0.0;
             trip.getBudget().setRemainingAmount(totalBudget - spentAmount);
-            
-            // 保存更新后的trip对象到数据库
-            tripRepository.save(trip);
+            // 移除这里的保存操作，因为会在调用方法中保存，避免重复保存
         }
     }
 
