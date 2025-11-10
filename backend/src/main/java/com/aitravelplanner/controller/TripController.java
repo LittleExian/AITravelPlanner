@@ -29,10 +29,9 @@ public class TripController {
     @PostMapping
     public ResponseEntity<Trip> createTrip(@Valid @RequestBody TripCreateRequest request) {
         try {
-            User currentUser = userService.getCurrentUser();
-            // 创建Trip对象并设置当前用户为行程所有者
+            // 创建Trip对象并从请求中获取userId
             Trip trip = new Trip();
-            trip.setUserId(currentUser.getId());
+            trip.setUserId(request.getUserId());
             // 从request复制其他属性
             trip.setTitle(request.getTitle());
             trip.setDestination(request.getDestination());
@@ -41,10 +40,13 @@ public class TripController {
             trip.setDescription(request.getDescription());
             trip.setTags(request.getTags());
             trip.setCoverImage(request.getCoverImage());
-            trip.setPublic(request.isPublic());
+            // 设置新增字段
+            trip.setBudgetAmount(request.getBudgetAmount());
+            trip.setPeopleCount(request.getPeopleCount());
+            trip.setTravelPreferences(request.getTravelPreferences());
             
             Trip createdTrip = tripService.createTrip(trip);
-            logger.info("用户 {} 成功创建行程: {}", currentUser.getEmail(), createdTrip.getId());
+            logger.info("用户ID {} 成功创建行程: {}", request.getUserId(), createdTrip.getId());
             return ResponseEntity.ok(createdTrip);
         } catch (Exception e) {
             logger.error("创建行程失败: {}", e.getMessage());
@@ -55,77 +57,72 @@ public class TripController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Trip>> getUserTrips(@PathVariable String userId) {
         try {
-            // 获取当前认证用户
-            User currentUser = userService.getCurrentUser();
+            // 直接根据用户ID获取行程，不需要认证和权限检查
+            logger.info("获取用户 {} 的行程请求", userId);
             
-            // 日志记录当前用户和请求的用户ID
-            logger.info("获取行程请求 - 当前用户: {}, 请求用户ID: {}", 
-                        currentUser.getEmail(), userId);
-            
-            // 权限检查：用户只能查看自己的行程
-            if (currentUser.getId().equals(userId)) {
-                List<Trip> trips = tripService.getUserTrips(userId);
-                logger.info("成功获取到 {} 个行程", trips.size());
-                return ResponseEntity.ok(trips);
-            } else {
-                logger.warn("权限拒绝 - 用户 {} 尝试访问用户 {} 的行程", 
-                           currentUser.getId(), userId);
-                // 对于非自己的行程，只返回公开行程
-                List<Trip> publicTrips = tripService.getPublicTripsByUserId(userId);
-                return ResponseEntity.ok(publicTrips);
-            }
+            List<Trip> trips = tripService.getUserTrips(userId);
+            logger.info("成功获取到用户 {} 的 {} 个行程", userId, trips.size());
+            return ResponseEntity.ok(trips);
         } catch (Exception e) {
             logger.error("获取行程失败: {}", e.getMessage());
-            // 添加更详细的错误日志
-            if (e instanceof SecurityException || e.getMessage().contains("未认证")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @GetMapping("/{tripId}")
     public ResponseEntity<?> getTripById(@PathVariable String tripId) {
-        Trip trip = tripService.getTripById(tripId)
-                .orElseThrow(() -> new RuntimeException("行程不存在"));
-
-        // 检查访问权限：行程公开或属于当前用户
-        User currentUser = userService.getCurrentUser();
-        if (!trip.isPublic() && !trip.getUserId().equals(currentUser.getId())) {
-            return ResponseEntity.status(403).body("无权限访问此行程");
+        try {
+            logger.info("获取行程 {} 的请求", tripId);
+            
+            Trip trip = tripService.getTripById(tripId)
+                    .orElseThrow(() -> new RuntimeException("行程不存在"));
+            
+            logger.info("成功获取行程 {}", tripId);
+            return ResponseEntity.ok(trip);
+        } catch (Exception e) {
+            logger.error("获取行程失败: {}", e.getMessage());
+            if (e.getMessage().contains("行程不存在")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("行程不存在");
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("获取行程失败");
         }
-
-        return ResponseEntity.ok(trip);
     }
 
     @PutMapping("/{tripId}")
     public ResponseEntity<?> updateTrip(@PathVariable String tripId, @RequestBody Trip trip) {
-        // 检查权限：只能更新自己的行程
-        User currentUser = userService.getCurrentUser();
-        Trip existingTrip = tripService.getTripById(tripId)
-                .orElseThrow(() -> new RuntimeException("行程不存在"));
+        try {
+            logger.info("更新行程 {} 的请求", tripId);
+            
+            Trip existingTrip = tripService.getTripById(tripId)
+                    .orElseThrow(() -> new RuntimeException("行程不存在"));
 
-        if (!existingTrip.getUserId().equals(currentUser.getId())) {
-            return ResponseEntity.status(403).body("无权限更新此行程");
+            Trip updatedTrip = tripService.updateTrip(tripId, trip);
+            logger.info("行程 {} 更新成功", tripId);
+            return ResponseEntity.ok(updatedTrip);
+        } catch (Exception e) {
+            logger.error("更新行程失败: {}", e.getMessage());
+            if (e.getMessage().contains("行程不存在")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("行程不存在");
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("更新行程失败");
         }
-
-        Trip updatedTrip = tripService.updateTrip(tripId, trip);
-        return ResponseEntity.ok(updatedTrip);
     }
 
     @DeleteMapping("/{tripId}")
     public ResponseEntity<?> deleteTrip(@PathVariable String tripId) {
-        // 检查权限：只能删除自己的行程
-        User currentUser = userService.getCurrentUser();
-        Trip trip = tripService.getTripById(tripId)
-                .orElseThrow(() -> new RuntimeException("行程不存在"));
-
-        if (!trip.getUserId().equals(currentUser.getId())) {
-            return ResponseEntity.status(403).body("无权限删除此行程");
+        try {
+            logger.info("尝试删除行程 {}", tripId);
+            
+            Trip trip = tripService.getTripById(tripId)
+                    .orElseThrow(() -> new RuntimeException("行程不存在"));
+            
+            tripService.deleteTrip(tripId);
+            logger.info("行程 {} 删除成功", tripId);
+            return ResponseEntity.ok("行程已删除");
+        } catch (Exception e) {
+            logger.error("删除行程失败: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("删除行程失败");
         }
-
-        tripService.deleteTrip(tripId);
-        return ResponseEntity.ok("行程已删除");
     }
 
     @GetMapping("/public/all")

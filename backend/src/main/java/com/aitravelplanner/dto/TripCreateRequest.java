@@ -9,6 +9,9 @@ import java.util.List;
 
 @Data
 public class TripCreateRequest {
+    @NotBlank(message = "用户ID不能为空")
+    private String userId;
+    
     @NotBlank(message = "行程标题不能为空")
     private String title;
 
@@ -24,5 +27,8 @@ public class TripCreateRequest {
     private String description;
     private List<String> tags;
     private String coverImage;
-    private boolean isPublic;
+
+    private Double budgetAmount; // 预算金额
+    private Integer peopleCount; // 同行人数
+    private List<String> travelPreferences; // 旅行偏好
 }

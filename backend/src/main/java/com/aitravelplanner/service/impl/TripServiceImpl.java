@@ -4,6 +4,7 @@ import com.aitravelplanner.dto.TripCreateRequest;
 import com.aitravelplanner.model.Trip;
 import com.aitravelplanner.repository.TripRepository;
 import com.aitravelplanner.service.TripService;
+import com.aitravelplanner.service.TravelRouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,9 @@ public class TripServiceImpl implements TripService {
 
     @Autowired
     private TripRepository tripRepository;
+    
+    @Autowired
+    private TravelRouteService travelRouteService;
 
     @Override
     public Trip createTrip(Trip trip) {
@@ -29,7 +33,8 @@ public class TripServiceImpl implements TripService {
     
     @Override
     public List<Trip> getPublicTripsByUserId(String userId) {
-        return tripRepository.findByUserIdAndIsPublicTrue(userId);
+        // 移除公开行程限制，返回用户所有行程
+        return tripRepository.findByUserId(userId);
     }
 
     @Override
@@ -55,7 +60,10 @@ public class TripServiceImpl implements TripService {
         existingTrip.setDescription(trip.getDescription());
         existingTrip.setTags(trip.getTags());
         existingTrip.setCoverImage(trip.getCoverImage());
-        existingTrip.setPublic(trip.isPublic());
+        // 更新新增字段
+        existingTrip.setBudgetAmount(trip.getBudgetAmount());
+        existingTrip.setPeopleCount(trip.getPeopleCount());
+        existingTrip.setTravelPreferences(trip.getTravelPreferences());
         existingTrip.setUpdatedAt(new Date());
 
         return tripRepository.save(existingTrip);
@@ -63,16 +71,21 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public void deleteTrip(String tripId) {
+        // 先删除相关的旅行路线
+        travelRouteService.deleteRoutesByTripId(tripId);
+        // 再删除行程
         tripRepository.deleteById(tripId);
     }
 
     @Override
     public List<Trip> getPublicTrips() {
-        return tripRepository.findByIsPublicTrue();
+        // 返回所有行程（不再区分公开/私有）
+        return tripRepository.findAll();
     }
 
     @Override
     public List<Trip> searchPublicTrips(String destination) {
-        return tripRepository.findByDestinationContainingAndIsPublicTrue(destination);
+        // 搜索所有行程中的目的地，不再区分公开/私有
+        return tripRepository.findByDestinationContaining(destination);
     }
 }

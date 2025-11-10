@@ -7,7 +7,9 @@ export interface TripCreateRequest {
   startDate: string;
   endDate: string;
   description: string;
-  isPublic: boolean;
+  budgetAmount?: number;
+  peopleCount?: number;
+  travelPreferences?: string[];
 }
 
 export interface Trip {
@@ -17,10 +19,12 @@ export interface Trip {
   startDate: string;
   endDate: string;
   description: string;
-  isPublic: boolean;
   userId: string;
   createdAt: string;
   updatedAt: string;
+  budgetAmount?: number;
+  peopleCount?: number;
+  travelPreferences?: string[];
 }
 
 class TripAPI {

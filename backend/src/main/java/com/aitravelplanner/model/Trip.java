@@ -22,6 +22,9 @@ public class Trip {
     private String coverImage;
     private Date createdAt;
     private Date updatedAt;
-    private boolean isPublic;
+
     private Budget budget;
+    private Double budgetAmount; // 预算金额
+    private Integer peopleCount; // 同行人数
+    private List<String> travelPreferences; // 旅行偏好
 }

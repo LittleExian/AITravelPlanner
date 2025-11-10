@@ -129,7 +129,9 @@ export const useTripStore = defineStore('trip', {
       startDate: string;
       endDate: string;
       description: string;
-      isPublic: boolean;
+      budgetAmount?: number;
+      peopleCount?: number;
+      travelPreferences?: string[];
     }) {
       this.loading = true
       this.error = null

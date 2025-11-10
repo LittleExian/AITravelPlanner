@@ -30,55 +30,43 @@ public class BudgetController {
 
     @GetMapping("/trip/{tripId}")
     public ResponseEntity<?> getTripBudget(@PathVariable String tripId) {
-        // 检查访问权限
-        if (!hasTripAccess(tripId)) {
-            return ResponseEntity.status(403).body("无权限访问此行程的预算");
+        try {
+            Budget budget = budgetService.getTripBudget(tripId);
+            return ResponseEntity.ok(budget);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("获取预算失败: " + e.getMessage());
         }
-
-        Budget budget = budgetService.getTripBudget(tripId);
-        return ResponseEntity.ok(budget);
     }
 
     @PostMapping("/trip/{tripId}/expenses")
     public ResponseEntity<?> addExpense(@PathVariable String tripId, @Valid @RequestBody ExpenseAddRequest request) {
-        // 检查访问权限
-        if (!hasTripAccess(tripId)) {
-            return ResponseEntity.status(403).body("无权限为此行程添加费用");
+        try {
+            Expense expense = budgetService.addExpense(tripId, request);
+            return ResponseEntity.ok(expense);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("添加费用失败: " + e.getMessage());
         }
-
-        Expense expense = budgetService.addExpense(tripId, request);
-        return ResponseEntity.ok(expense);
     }
 
     @DeleteMapping("/trip/{tripId}/expenses/{expenseId}")
     public ResponseEntity<?> deleteExpense(@PathVariable String tripId, @PathVariable String expenseId) {
-        // 检查访问权限
-        if (!hasTripAccess(tripId)) {
-            return ResponseEntity.status(403).body("无权限删除此行程的费用");
+        try {
+            budgetService.deleteExpense(tripId, expenseId);
+            return ResponseEntity.ok("费用已删除");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("删除费用失败: " + e.getMessage());
         }
-
-        budgetService.deleteExpense(tripId, expenseId);
-        return ResponseEntity.ok("费用已删除");
     }
 
     @PutMapping("/trip/{tripId}/allocations")
     public ResponseEntity<?> updateBudgetAllocations(@PathVariable String tripId, @RequestBody Map<String, Double> allocations) {
-        // 检查访问权限
-        if (!hasTripAccess(tripId)) {
-            return ResponseEntity.status(403).body("无权限更新此行程的预算分配");
+        try {
+            Budget budget = budgetService.updateBudgetAllocations(tripId, allocations);
+            return ResponseEntity.ok(budget);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("更新预算分配失败: " + e.getMessage());
         }
-
-        Budget budget = budgetService.updateBudgetAllocations(tripId, allocations);
-        return ResponseEntity.ok(budget);
     }
 
-    // 辅助方法：检查用户是否有权限访问行程
-    private boolean hasTripAccess(String tripId) {
-        User currentUser = userService.getCurrentUser();
-        Trip trip = tripService.getTripById(tripId)
-                .orElseThrow(() -> new RuntimeException("行程不存在"));
-        
-        // 行程公开或属于当前用户
-        return trip.isPublic() || trip.getUserId().equals(currentUser.getId());
-    }
+    // 辅助方法已移除，不再需要权限检查
 }

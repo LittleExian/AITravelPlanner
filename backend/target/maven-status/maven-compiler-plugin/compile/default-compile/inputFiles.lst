@@ -1,6 +1,7 @@
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\Application.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\model\User.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\security\JwtUtils.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\repository\TravelRouteRepository.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\exception\GlobalExceptionHandler.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\repository\TripRepository.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\model\Expense.java
@@ -12,7 +13,9 @@ C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\repository\UserRepository.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\BudgetController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\impl\UserServiceImpl.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\model\TravelRoute.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\UserResponse.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\TravelRouteService.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\ExpenseAddRequest.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\model\Trip.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\security\SecurityConfig.java
@@ -22,9 +25,11 @@ C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\config\WebConfig.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\UserLoginRequest.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\TripService.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\TravelRouteController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\security\UserDetailsServiceImpl.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\controller\AuthController.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\security\JwtAuthenticationFilter.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\TokenResponse.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\dto\TripCreateRequest.java
+C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\impl\TravelRouteServiceImpl.java
 C:\Users\29799\project\AITravelPlanner\backend\src\main\java\com\aitravelplanner\service\BudgetService.java

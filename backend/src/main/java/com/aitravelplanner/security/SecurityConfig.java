@@ -47,6 +47,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/trips/public/**").permitAll()
+                .requestMatchers("/api/trips").permitAll()  // 允许POST /api/trips不需要认证
+                .requestMatchers("/api/trips/user/**").permitAll()  // 允许GET /api/trips/user/{userId}不需要认证
+                .requestMatchers("/api/trips/**").permitAll()  // 允许DELETE /api/trips/{tripId}不需要认证
+                .requestMatchers("/api/routes/**").permitAll()  // 允许所有/api/routes请求不需要认证
+                .requestMatchers("/api/budgets/**").permitAll()  // 允许所有/api/budgets请求不需要认证
                 .anyRequest().authenticated();
 
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
