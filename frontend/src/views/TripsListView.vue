@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElCard, ElMessageBox, ElTable, ElTableColumn, ElTag, ElButton, ElEmpty, ElSkeleton } from 'element-plus'
+import { ElMessage, ElCard, ElMessageBox, ElTable, ElTableColumn,  ElButton, ElEmpty, ElSkeleton } from 'element-plus'
 import { useUserStore, useTripStore } from '../store'
 
 const router = useRouter()
@@ -183,7 +183,7 @@ const formatDate = (dateString: string) => {
               </el-table-column>
               
               <el-table-column prop="destination" label="目的地" min-width="120" />
-              
+              <el-table-column prop="peopleCount" label="人数" min-width="80" /> 
               <el-table-column label="时间" min-width="200">
                 <template #default="scope">
                   <div class="date-cell">
@@ -194,21 +194,7 @@ const formatDate = (dateString: string) => {
               </el-table-column>
               
               <el-table-column prop="description" label="行程描述" min-width="220" show-overflow-tooltip />
-              
-              <el-table-column prop="tags" label="标签" min-width="150">
-                <template #default="scope">
-                  <div class="tags-cell">
-                    <el-tag 
-                      v-for="(tag, index) in scope.row.tags" 
-                      :key="index" 
-                      size="small" 
-                      class="custom-tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                </template>
-              </el-table-column>
+
               
               <el-table-column label="操作" width="200" fixed="right">
                 <template #default="scope">

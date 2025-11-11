@@ -457,6 +457,20 @@ const removeAccommodation = (accommodation: string) => {
 const viewBudget = () => {
   router.push(`/budget/${tripId}`)
 }
+// 在组件的 script 部分添加偏好映射函数
+const getPreferenceLabel = (value: string) => {
+  const preferenceMap = {
+    'food': '美食',
+    'shopping': '购物',
+    'culture': '文化',
+    'nature': '自然风景',
+    'anime': '动漫',
+    'history': '历史',
+    'art': '艺术',
+    'adventure': '冒险'
+  }
+  return (preferenceMap as Record<string, string>)[value] || value
+}
 </script>
 
 <template>
@@ -511,7 +525,7 @@ const viewBudget = () => {
                   effect="dark"
                   class="preference-tag"
                 >
-                  {{ pref }}
+                  {{ getPreferenceLabel(pref) }}
                 </el-tag>
                 <el-tag 
                   v-for="tag in trip.tags" 

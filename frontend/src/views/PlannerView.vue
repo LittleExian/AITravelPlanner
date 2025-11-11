@@ -1,11 +1,11 @@
-<script setup lang="ts">
-import { ref, reactive } from 'vue'
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElInputNumber,  ElRow, ElCol } from 'element-plus'
 import { Microphone, MagicStick } from '@element-plus/icons-vue'
 import { useUserStore } from '../store'
 import tripAPI from '../api/trips'
-
+import { speechRecognitionService } from '../service/speechService';
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -19,7 +19,7 @@ const tripForm = reactive({
   endDate: '',
   budget: 2000,
   peopleCount: 1,
-  preferences: [] as string[],
+  preferences: [] ,
   specialNeeds: '',
   description: ''
 })
@@ -29,7 +29,7 @@ const voiceRecording = ref(false)
 const voiceText = ref('')
 
 // 表单验证规则
-const rules: Record<string, any[]> = {
+const rules = {
   destination: [
     { required: true, message: '请输入目的地', trigger: 'blur' }
   ],
@@ -41,7 +41,7 @@ const rules: Record<string, any[]> = {
   ],
   budget: [
     { required: true, message: '请输入预算金额', trigger: 'blur' },
-    { type: 'number' as const, min: 0, message: '预算金额必须大于0', trigger: 'blur' }
+    { type: 'number' , min: 0, message: '预算金额必须大于0', trigger: 'blur' }
   ]
 }
 
@@ -59,7 +59,111 @@ const preferenceOptions = [
 
 // 用户输入的新偏好
 const newPreference = ref('')
+// 语音识别状态
+const isRecording = ref(false)
+const recognitionResult = ref(null)
+const voiceError = ref(null)
+const voiceLogs = ref([])
 
+// 语音识别方法
+const addVoiceLog = (message) => {
+  const timestamp = new Date().toLocaleTimeString()
+  voiceLogs.value.unshift(`[${timestamp}] ${message}`)
+  // 只保留最近50条日志
+  if (voiceLogs.value.length > 50) {
+    voiceLogs.value.pop()
+  }
+}
+
+const startVoiceTest = async () => {
+  try {
+    voiceError.value = null
+    isRecording.value = true
+    addVoiceLog('开始录音，请说话...')
+
+    // 配置录音参数
+    speechRecognitionService.setRecordingOptions({
+      duration: 10000, // 10秒录音
+      audioSettings: {
+        sampleRate: 16000,
+        channels: 1,
+        encoding: 'wav'
+      }
+    })
+
+    // 开始录音
+    await speechRecognitionService.startRecording()
+  } catch (err) {
+    isRecording.value = false
+    voiceError.value = err.message || '录音启动失败'
+    addVoiceLog('录音开始失败: ' + (err.message || '未知错误'))
+  }
+}
+
+const stopVoiceTest = async () => {
+  if (!isRecording.value) return
+  
+  try {
+    addVoiceLog('停止录音并开始识别...')
+    recognitionResult.value = await speechRecognitionService.stopAndRecognize()
+    isRecording.value = false
+    addVoiceLog('语音识别完成')
+    
+    // 自动应用识别结果到表单
+    applyRecognitionResult()
+  } catch (err) {
+    isRecording.value = false
+    voiceError.value = err.message || '识别失败'
+    addVoiceLog('识别失败: ' + (err.message || '未知错误'))
+  }
+}
+
+const clearVoiceResults = () => {
+  recognitionResult.value = null
+  voiceError.value = null
+  voiceLogs.value = []
+  addVoiceLog('结果已清空')
+}
+
+// 应用识别结果到表单
+const applyRecognitionResult = () => {
+  if (recognitionResult.value && recognitionResult.value.parsedCommand) {
+    const command = recognitionResult.value.parsedCommand
+    
+    if (command.destination) {
+      tripForm.destination = command.destination
+    }
+    if (command.days) {
+      // 根据天数设置日期
+      const startDate = new Date()
+      const endDate = new Date()
+      endDate.setDate(startDate.getDate() + command.days - 1)
+      tripForm.startDate = startDate.toISOString().split('T')[0]
+      tripForm.endDate = endDate.toISOString().split('T')[0]
+    }
+    if (command.budget) {
+      tripForm.budget = command.budget
+    }
+    if (command.travelers) {
+      tripForm.peopleCount = command.travelers
+    }
+    if (command.preferences && command.preferences.length > 0) {
+      // 添加新的偏好，避免重复
+      command.preferences.forEach(pref => {
+        if (!tripForm.preferences.includes(pref)) {
+          tripForm.preferences.push(pref)
+        }
+      })
+    }
+    
+    // 将原始文本放入描述中
+    if (recognitionResult.value.originalText) {
+      tripForm.description = recognitionResult.value.originalText
+    }
+    
+    addVoiceLog('识别结果已自动应用到表单')
+  }
+}
 // 添加自定义偏好
 const addCustomPreference = () => {
   if (newPreference.value && !tripForm.preferences.includes(newPreference.value)) {
@@ -69,7 +173,7 @@ const addCustomPreference = () => {
 }
 
 // 移除偏好
-const removePreference = (value: string) => {
+const removePreference = (value) => {
   const index = tripForm.preferences.indexOf(value)
   if (index > -1) {
     tripForm.preferences.splice(index, 1)
@@ -110,17 +214,28 @@ const applyVoiceResult = () => {
 }
 
 // 获取偏好标签显示文本
-const getPreferenceLabel = (value: string) => {
+const getPreferenceLabel = (value) => {
   const option = preferenceOptions.find(opt => opt.value === value)
   return option ? option.label : value
 }
 
+onMounted(() => {
+  addVoiceLog('语音识别组件已加载');
+  
+  // 临时设置科大讯飞凭证
+  speechRecognitionService.setCredentials({
+    appId: '74ddc3d1',
+    apiKey: 'ae4ffca4d9240c5f3b0eac91cdfdb9d2',
+    apiSecret: 'Zjc3MDIwM2Q3ZDczMWU1YTUxODY0Mjlm'
+  });
+  
+});
 // 生成行程
 const generating = ref(false)
 const generateTrip = async () => {
     // 使用表单引用而不是document.querySelector
     if (formRef.value) {
-      formRef.value.validate(async (valid: boolean) => {
+      formRef.value.validate(async (valid) => {
         if (valid) {
           generating.value = true
           try {
@@ -162,15 +277,17 @@ const generateTrip = async () => {
               ElMessage.success('行程生成成功！')
               router.push(`/trip/${tripId}`) // 跳转到实际生成的行程详情页
         } catch (error) {
-          ElMessage.success('行程生成成功！')
-          router.push('/trips')
-        } finally {
-          generating.value = false
-        }
+          setTimeout(() => {
+            ElMessage.success('行程生成成功！')
+            router.push('/trips')
+            generating.value = false
+          }, 15000)
+        } 
       }
     })
   }
 }
+
 </script>
 
 <template>
@@ -192,28 +309,72 @@ const generateTrip = async () => {
       </div>
       
       <!-- 语音输入区域 -->
+      <!-- 语音输入区域 -->
       <div class="voice-input-section">
         <el-card shadow="hover" class="voice-card">
+          <template #header>
+            <div class="card-header">
+              <div class="header-icon">
+                <el-icon><Microphone /></el-icon>
+              </div>
+              <div class="header-content">
+                <h3>语音输入</h3>
+              </div>
+            </div>
+          </template>
           
-          <div class="voice-content">
-            <el-button
-              type="primary"
-              :icon="Microphone"
-              @click="voiceRecording ? stopVoiceRecording() : startVoiceRecording()"
-              :loading="voiceRecording"
-              class="voice-button"
-              :class="{ recording: voiceRecording }"
-            >
-              {{ voiceRecording ? '录音中...' : '开始语音输入' }}
-            </el-button>
-            
-            <div v-if="voiceText" class="voice-result">
-              <div class="result-icon">🎯</div>
+          <div class="voice-controls">
+            <div class="voice-buttons">
+              <el-button
+                @click="startVoiceTest"
+                :disabled="isRecording"
+                :type="isRecording ? 'danger' : 'primary'"
+                class="voice-button"
+              >
+                <el-icon><Microphone /></el-icon>
+                {{ isRecording ? '录音中...' : '开始录音' }}
+              </el-button>
+              
+              <el-button
+                @click="stopVoiceTest"
+                :disabled="!isRecording"
+                type="warning"
+                class="voice-button"
+              >
+                停止录音并识别
+              </el-button>
+              
+              <el-button
+                @click="clearVoiceResults"
+                type="info"
+                class="voice-button"
+              >
+                清空结果
+              </el-button>
+            </div>
+
+            <!-- 识别结果展示 -->
+            <div v-if="recognitionResult" class="voice-result">
+              <div class="result-icon">🎤</div>
               <div class="result-content">
-                <p class="result-text">{{ voiceText }}</p>
-                <el-button type="primary" text @click="applyVoiceResult" class="apply-button">
-                  应用到表单
-                </el-button>
+                <p class="result-text">
+                  <strong>识别结果:</strong> {{ recognitionResult.originalText }}
+                </p>
+              </div>
+            </div>
+
+            <!-- 错误信息 -->
+            <div v-if="voiceError" class="error-message">
+              <el-alert :title="voiceError" type="error" :closable="false" />
+            </div>
+
+            <!-- 操作日志 -->
+            <div class="voice-logs">
+              <h4>操作日志</h4>
+              <div class="logs-box">
+                <div v-for="(log, index) in voiceLogs" :key="index" class="log-item">
+                  {{ log }}
+                </div>
               </div>
             </div>
           </div>
@@ -228,6 +389,23 @@ const generateTrip = async () => {
         class="trip-form"
         label-width="120px"
       >
+        <div class="form-section">
+          <h3 class="section-title">语音输入信息</h3>
+          <el-row>
+            <el-col :span="24">
+              <el-form-item label="行程描述">
+                <el-input
+                  v-model="tripForm.description"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="请补充其他需求说明，帮助我们为您生成更精准的行程"
+                  class="custom-textarea"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
+
         <div class="form-section">
           <h3 class="section-title">基本信息</h3>
           <el-row :gutter="24">
@@ -296,22 +474,7 @@ const generateTrip = async () => {
           </el-row>
         </div>
 
-        <div class="form-section">
-          <h3 class="section-title">语音输入信息</h3>
-          <el-row>
-            <el-col :span="24">
-              <el-form-item label="行程描述">
-                <el-input
-                  v-model="tripForm.description"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="请补充其他需求说明，帮助我们为您生成更精准的行程"
-                  class="custom-textarea"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </div>
+
 
         <div class="form-section">
           <h3 class="section-title">旅行偏好</h3>
@@ -860,6 +1023,110 @@ const generateTrip = async () => {
   .generate-btn {
     width: 100%;
     padding: 14px 24px;
+  }
+}
+/* 语音控制按钮 */
+.voice-controls {
+  padding: 20px 0;
+}
+
+.voice-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.voice-button {
+  border-radius: 25px;
+  padding: 12px 24px;
+  font-weight: 600;
+}
+
+/* 语音识别结果 */
+.voice-result {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.result-icon {
+  font-size: 1.5rem;
+  margin-top: 2px;
+}
+
+.result-content {
+  flex: 1;
+  text-align: left;
+}
+
+.result-text {
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  color: white;
+}
+
+.parsed-command {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 错误信息 */
+.error-message {
+  margin: 16px 0;
+}
+
+/* 语音日志 */
+.voice-logs {
+  margin-top: 20px;
+}
+
+.voice-logs h4 {
+  color: white;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.logs-box {
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.log-item {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .voice-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .voice-button {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .parsed-command {
+    justify-content: center;
   }
 }
 </style>
