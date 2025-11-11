@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElInputNumber, ElSlider, ElRow, ElCol } from 'element-plus'
+import { ElMessage, ElInputNumber,  ElRow, ElCol } from 'element-plus'
 import { Microphone, MagicStick } from '@element-plus/icons-vue'
-import { useUserStore, useTripStore } from '../store'
+import { useUserStore } from '../store'
 import tripAPI from '../api/trips'
 
 const router = useRouter()
 const userStore = useUserStore()
-const tripStore = useTripStore()
 
 // 添加表单引用
 const formRef = ref()
