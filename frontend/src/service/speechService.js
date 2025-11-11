@@ -14,7 +14,7 @@ const initRecorderManager = () => {
   } else {
     // 动态加载RecorderManager
     const script = document.createElement('script');
-    script.src = '/dist/index.umd.js';
+    script.src = '/public/index.umd.js';
     script.async = true;
     
     return new Promise((resolve) => {
@@ -94,7 +94,7 @@ export class SpeechRecognitionService {
       }
       
       // 创建Recorder实例
-      this.recorder = new RecorderManager("/dist");
+      this.recorder = new RecorderManager("/public");
       
       const websocketUrl = this.getWebSocketUrl();
       
