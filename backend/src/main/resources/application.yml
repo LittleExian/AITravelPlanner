@@ -24,6 +24,12 @@ spring:
   application:
     name: AITravelPlanner
 
+# 阿里百炼API配置
+ali:
+  bailian:
+    api:
+      key: sk-d0d96d7a0bfa496291897fa48bb5807d  # 生产环境中应通过环境变量配置
+
 # JWT配置
 jwt:
   # ⚠️ 警告: 这个密钥太短了! HS256需要至少32个字符(256位)

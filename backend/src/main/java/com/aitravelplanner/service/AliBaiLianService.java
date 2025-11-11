@@ -23,8 +23,9 @@ public class AliBaiLianService {
     // 阿里百炼API地址
     private static final String API_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
     
-    // API Key (实际应用中应从配置文件或环境变量读取)
-    private final String apiKey = "sk-d0d96d7a0bfa496291897fa48bb5807d";
+    // 从环境变量或配置文件中读取API Key
+    @Value("${ali.bailian.api.key}")
+    private String apiKey;
     
     private final RestTemplate restTemplate;
     
