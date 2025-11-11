@@ -1,99 +1,206 @@
-# AI旅行规划助手 (AITravelPlanner)
+# AITravelPlanner
+
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/yourusername/AITravelPlanner.git)
 
 ## 项目简介
 
-AITravelPlanner是一款基于AI的智能旅行规划平台，旨在通过AI技术简化用户的旅行规划过程。用户可以通过语音或文字输入旅行需求，系统会自动生成个性化的旅行路线和建议，并提供实时旅行辅助功能。
+智能旅游规划平台 —— 通过语音/文字输入生成个性化行程、预算管理与云端同步，提供实时旅行辅助。
+
+## 目录
+
+- [项目概述](#项目概述)
+- [核心功能](#核心功能)
+- [技术栈](#技术栈)
+- [仓库结构](#仓库结构)
+- [快速开始](#快速开始)
+- [Docker部署](#docker部署)
+- [API Key与安全](#api-key与安全说明)
+- [助教运行指南](#助教运行评分指南)
+- [提交物清单](#提交物清单)
+- [开发扩展建议](#开发与扩展建议)
+- [常见问题](#常见问题)
+- [联系贡献](#联系贡献)
+
+## 项目概述
+
+AITravelPlanner 旨在简化旅行规划流程：用户可通过语音或文字输入旅行目的地、时间、预算、偏好等信息，系统使用大语言模型自动生成行程（含交通、住宿、景点、餐厅）、做预算估算，并提供费用记录与云端同步功能（支持注册/登录、保存多份行程）。
+
+> 详细配置说明请参考 [CONFIGURATION_SCHEME.md](./CONFIGURATION_SCHEME.md)
+> 技术栈详情请参考 [TECHNOLOGY_STACK_MANAGEMENT.md](./TECHNOLOGY_STACK_MANAGEMENT.md)
 
 ## 核心功能
 
-1. **智能行程规划**：通过语音（或文字）输入旅行需求，AI自动生成详细的旅行路线
-2. **费用预算与管理**：AI进行预算分析，支持语音记录旅行开销
-3. **用户管理与数据存储**：支持注册登录，行程云端同步，多设备访问
-4. **实时旅行辅助**：集成地图导航，提供旅行安全提示
+### 智能行程规划
+
+- 支持语音与文字输入（语音功能为必须项）
+- 自动生成个性化行程（天数拆分、每日路线、交通与时间估计、餐厅/景点推荐等）
+
+### 费用预算与管理
+
+- AI 预算估算（按人数/天数/偏好分配）
+- 支持旅行中开销记录（可语音录入）
+
+### 用户与数据管理
+
+- 注册 / 登录（JWT 无状态认证）
+- 云端行程同步、偏好设置与费用记录（可在多设备查看/编辑）
+
+### 地图与导航（可选增强）
+
+- 集成高德或百度地图展示与路线规划
 
 ## 技术栈
 
-- **前端**：React.js, Ant Design, 高德地图API
-- **后端**：Node.js + Express
-- **数据库**：MongoDB
-- **AI服务**：科大讯飞语音识别API, OpenAI API
-- **容器化**：Docker
+### 前端
 
-## 快速开始
+- **框架**：Vue 3 + TypeScript
+- **构建工具**：Vite
+- **状态管理**：Pinia
+- **路由**：Vue Router
+- **UI组件库**：Element Plus
 
-### 使用Docker运行
+### 后端
 
-```bash
-# 克隆项目
-git clone https://github.com/yourusername/AITravelPlanner.git
-cd AITravelPlanner
+- **框架**：Spring Boot（Java 17）
+- **安全**：Spring Security
+- **数据访问**：Spring Data MongoDB
 
-# 配置API Key
-cp .env.example .env
-# 编辑.env文件，填入所需的API Key
+### 数据库
 
-# 构建并启动Docker容器
-docker-compose up -d
-```
+- **主数据库**：MongoDB（本地或云端）
+  - 建议生产环境使用副本集
 
-### 本地开发
+### 第三方服务集成
 
-#### 前端开发
+- **语音识别**：科大讯飞 API（语音转文本/文本转语音）
+- **大模型**：阿里云百炼（智能行程规划）
+- **容器化**：Docker、Docker Compose
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
 
-#### 后端开发
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-## API Key配置
-
-本项目需要以下API Key：
-
-1. **科大讯飞语音识别API Key**
-2. **高德地图/百度地图API Key**
-3. **OpenAI API Key** (或其他大语言模型API Key)
-4. **数据库连接信息**
-
-请将这些配置放在`.env`文件中，或通过项目内的设置页面进行配置。
-
-## 项目结构
+## 仓库结构
 
 ```
 AITravelPlanner/
-├── frontend/          # 前端代码
-│   ├── public/
-│   ├── src/
-│   ├── package.json
-│   └── Dockerfile
-├── backend/           # 后端代码
-│   ├── src/
-│   ├── package.json
-│   └── Dockerfile
-├── .env.example       # 环境变量示例
-├── docker-compose.yml # Docker Compose配置
-├── PRD.md             # 产品需求文档
-└── README.md          # 项目说明文档
+├── frontend/          # Vue 3 前端项目 (Vite)
+├── backend/           # Spring Boot 后端
+├── docker/            # Dockerfile / docker-compose.yml 示例
+├── .github/workflows/ # GitHub Actions 工作流配置
+├── docs/              # 项目说明、设计文档
+├── README.md          # 项目主文档
+├── CONFIGURATION_SCHEME.md # 配置方案文档
+├── TECHNOLOGY_STACK_MANAGEMENT.md # 技术栈管理文档
+└── env.example        # 环境变量模板
 ```
 
-## 注意事项
+## 快速开始
 
-- 请勿将API Key直接写入代码中
-- 本项目使用的API Key请确保至少3个月内有效
-- 开发环境需要Node.js 16+和npm 8+
+### 环境要求
 
-## 许可证
+- Node.js 20.19+ 或 22.12+
+- Java 17 或更高版本
+- Maven 3.6.0 或更高版本
+- MongoDB 4.0 或更高版本
 
-MIT License
+### 步骤
 
-## 联系方式
+1. **克隆仓库**
 
-如有问题，请联系项目维护者。
+   ```bash
+   git clone https://github.com/yourusername/AITravelPlanner.git
+   cd AITravelPlanner
+   ```
+
+2. **配置环境变量**
+
+   复制 `env.example` 为实际使用的 `.env` 文件，或在后端 `application.yml` 中配置必要的环境变量。
+
+   示例环境变量配置：
+
+   ```dotenv
+   # 前端（Vite，变量以 VITE_ 前缀）
+   VITE_API_BASE_URL=http://localhost:8080/api
+   VITE_XUNFEI_APPID=your_xunfei_appid
+   VITE_XUNFEI_APIKEY=your_xunfei_apikey
+   VITE_MAP_API_KEY=your_map_api_key
+   
+   # 后端（通过系统环境或 application.yml 配置）
+   MONGODB_URI=mongodb://localhost:27017/aitravelplanner
+   ALI_BAILIAN_API_KEY=your_ali_bailian_api_key
+   JWT_SECRET=replace_with_a_secure_secret_at_least_32_chars
+   ```
+
+3. **启动后端服务**
+
+   ```bash
+   cd backend
+   mvn clean package
+   mvn spring-boot:run
+   # 或运行生成的 jar
+   # java -jar target/aitravelplanner-backend-1.0.0.jar
+   ```
+
+4. **启动前端服务**
+
+   ```bash
+   cd ../frontend
+   npm install
+   npm run dev
+   # 默认开发服务器地址：http://localhost:5173
+   ```
+
+## Docker部署
+
+### 构建镜像
+
+```bash
+# 后端镜像
+cd backend
+docker build -t aitravelplanner-backend:latest .
+
+# 前端镜像
+cd ../frontend
+docker build -t aitravelplanner-frontend:latest .
+```
+
+### 使用Docker Compose
+
+```bash
+cd docker
+docker compose up -d
+```
+
+### 推送镜像到仓库（示例）
+
+```bash
+# 登录阿里云镜像仓库
+docker login --username=your-aliyun-username registry.cn-xxx.aliyuncs.com
+
+# 打标签
+docker tag aitravelplanner-backend:latest registry.cn-xxx.aliyuncs.com/yourrepo/aitravelplanner-backend:latest
+
+# 推送镜像
+docker push registry.cn-xxx.aliyuncs.com/yourrepo/aitravelplanner-backend:latest
+```
+
+
+
+## 联系贡献
+
+欢迎提交 Issue 或 Pull Request！在提交 PR 时请保证提交信息清晰并关联相关任务。
+
+---
+
+## 环境变量示例
+
+```dotenv
+# 前端配置
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_XUNFEI_APPID=
+VITE_XUNFEI_APIKEY=
+VITE_MAP_API_KEY=
+
+# 后端配置
+MONGODB_URI=mongodb://localhost:27017/aitravelplanner
+ALI_BAILIAN_API_KEY=
+JWT_SECRET=replace_with_long_random_string
+```
