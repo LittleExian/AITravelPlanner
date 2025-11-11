@@ -2,6 +2,8 @@
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/LittleExian/AITravelPlanner.git)
 
+https://github.com/LittleExian/AITravelPlanner.git
+
 ## 项目简介
 
 智能旅游规划平台 —— 通过语音/文字输入生成个性化行程、预算管理与云端同步，提供实时旅行辅助。
@@ -145,37 +147,101 @@ AITravelPlanner/
 
 ## Docker部署
 
-### 构建镜像
+本项目已配置完整的Docker容器化解决方案，包含以下组件：
+
+- **MongoDB**：数据存储
+- **后端服务**：Spring Boot应用
+- **前端服务**：Vue 3应用 + Nginx
+
+### 快速部署步骤
+
+1. **准备环境变量文件**
+
+   在`docker`目录下创建`.env`文件（可选，用于配置敏感信息）：
+
+   ```dotenv
+   # 阿里云百炼API密钥
+   ALI_BAILIAN_API_KEY=your_ali_bailian_api_key
+   
+   # JWT密钥
+   JWT_SECRET=your_secure_jwt_secret_at_least_32_chars
+   
+   # 科大讯飞API配置
+   VITE_XUNFEI_APPID=your_xunfei_appid
+   VITE_XUNFEI_APIKEY=your_xunfei_apikey
+   
+   # 地图API密钥
+   VITE_MAP_API_KEY=your_map_api_key
+   ```
+
+2. **构建并启动所有服务**
+
+   ```bash
+   cd docker
+   docker compose up -d
+   ```
+
+   此命令将：
+   - 自动构建后端镜像
+   - 自动构建前端镜像
+   - 启动MongoDB数据库
+   - 启动后端服务
+   - 启动前端服务并配置Nginx代理
+
+3. **访问应用**
+
+   - 前端应用：http://localhost
+   - API文档：http://localhost:8080/swagger-ui.html
+   - MongoDB：localhost:27017
+
+### 单独构建镜像
+
+如果需要单独构建镜像：
 
 ```bash
-# 后端镜像
+# 构建后端镜像
 cd backend
 docker build -t aitravelplanner-backend:latest .
 
-# 前端镜像
+# 构建前端镜像
 cd ../frontend
 docker build -t aitravelplanner-frontend:latest .
 ```
 
-### 使用Docker Compose
+### 容器管理命令
 
 ```bash
+# 查看容器状态
 cd docker
-docker compose up -d
+docker compose ps
+
+# 查看服务日志
+cd docker
+docker compose logs -f
+
+# 停止服务
+cd docker
+docker compose down
+
+# 重启服务
+cd docker
+docker compose restart
 ```
 
-### 推送镜像到仓库（示例）
+### 环境变量说明
 
-```bash
-# 登录阿里云镜像仓库
-docker login --username=your-aliyun-username registry.cn-xxx.aliyuncs.com
+环境变量可以通过以下方式配置：
+1. 在`docker/.env`文件中设置（推荐）
+2. 在`docker compose up`命令前临时设置
+3. 修改`docker-compose.yml`文件中的默认值
 
-# 打标签
-docker tag aitravelplanner-backend:latest registry.cn-xxx.aliyuncs.com/yourrepo/aitravelplanner-backend:latest
+### 数据持久化
 
-# 推送镜像
-docker push registry.cn-xxx.aliyuncs.com/yourrepo/aitravelplanner-backend:latest
-```
+MongoDB数据通过Docker卷`mongo-data`持久化存储，确保容器重启后数据不会丢失。
+
+### 网络配置
+
+所有服务通过`aitravelplanner-network`网络相互通信，确保安全隔离。
 
 
 

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MongoDB 数据库服务
+  mongodb:
+    image: mongo:5.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=aitravelplanner
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+    networks:
+      - aitravelplanner-network
+
+  # 后端服务
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: aitravelplanner-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/aitravelplanner
+      - ALI_BAILIAN_API_KEY=${ALI_BAILIAN_API_KEY:-your_ali_bailian_api_key}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key}
+    depends_on:
+      - mongodb
+    restart: always
+    networks:
+      - aitravelplanner-network
+
+  # 前端服务
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: aitravelplanner-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080/api
+      - VITE_XUNFEI_APPID=${VITE_XUNFEI_APPID:-your_xunfei_appid}
+      - VITE_XUNFEI_APIKEY=${VITE_XUNFEI_APIKEY:-your_xunfei_apikey}
+      - VITE_MAP_API_KEY=${VITE_MAP_API_KEY:-your_map_api_key}
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - aitravelplanner-network
+
+networks:
+  aitravelplanner-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
