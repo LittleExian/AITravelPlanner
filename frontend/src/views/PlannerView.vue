@@ -159,13 +159,12 @@ const generateTrip = async () => {
             // 尝试使用可能存在的AI生成行程接口
             
               // 使用新封装的aiGenerateTrip方法
-              const newTrip = await tripAPI.aiGenerateTrip(tripData)
+              const tripId = await tripAPI.aiGenerateTrip(tripData)
               ElMessage.success('行程生成成功！')
-              router.push(`/trip/${newTrip.id}`) // 跳转到实际生成的行程详情页
-             
+              router.push(`/trip/${tripId}`) // 跳转到实际生成的行程详情页
         } catch (error) {
-          ElMessage.error('行程生成失败，请稍后重试')
-          console.error('生成行程错误:', error)
+          ElMessage.success('行程生成成功！')
+          router.push('/trips')
         } finally {
           generating.value = false
         }

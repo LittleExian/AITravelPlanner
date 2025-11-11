@@ -76,7 +76,7 @@ public class TripController {
     
     // AI生成行程端点
     @PostMapping("/ai-generate")
-    public ResponseEntity<Trip> aiGenerateTrip(@Valid @RequestBody TripCreateRequest request) {
+    public ResponseEntity<String> aiGenerateTrip(@Valid @RequestBody TripCreateRequest request) {
         try {
             logger.info("收到AI生成行程请求，用户ID: {}, 目的地: {}", request.getUserId(), request.getDestination());
             
@@ -120,10 +120,8 @@ public class TripController {
             budgetService.updateBudgetAllocations(tripId, allocations);
             logger.info("使用行程ID: {} 成功更新行程预算分配信息", tripId);
             
-            // 返回完整的行程信息
-            createdTrip = tripService.getTripById(tripId).orElseThrow();
-            logger.info("使用行程ID: {} 完成AI行程生成，返回行程信息", tripId);
-            return ResponseEntity.ok(createdTrip);
+            logger.info("使用行程ID: {} 完成AI行程生成，返回行程ID", tripId);
+            return ResponseEntity.ok(tripId);
         } catch (Exception e) {
             logger.error("AI生成行程失败: {}", e.getMessage());
             e.printStackTrace();

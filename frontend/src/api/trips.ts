@@ -45,9 +45,9 @@ class TripAPI {
   /**
    * AI生成行程
    * @param data 行程规划信息
-   * @returns AI生成的行程信息，包含路线和预算
+   * @returns AI生成的行程ID
    */
-  async aiGenerateTrip(data: TripCreateRequest): Promise<Trip> {
+  async aiGenerateTrip(data: TripCreateRequest): Promise<string> {
     return apiClient.post('/trips/ai-generate', data);
   }
 
