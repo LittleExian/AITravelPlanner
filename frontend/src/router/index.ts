@@ -50,6 +50,12 @@ const router = createRouter({
       name: 'trips',
       component: () => import('../views/TripsListView.vue'),
       meta: { title: '我的行程', requiresAuth: true }
+    },
+    {
+      path: '/recognize',
+      name: 'recognize',
+      component: () => import('../views/RecognizeView.vue'),
+      meta: { title: '语音识别', requiresAuth: true }
     }
   ]
 })

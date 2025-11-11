@@ -50,6 +50,7 @@ const handleLogout = () => {
           <el-menu-item index="/">首页</el-menu-item>
           <el-menu-item v-if="userStore.token" index="/planner">规划行程</el-menu-item>
           <el-menu-item v-if="userStore.token" index="/trips">我的行程</el-menu-item>
+          <el-menu-item v-if="userStore.token" index="/recognize">语音识别</el-menu-item>
           <el-menu-item v-if="userStore.token" index="/profile">个人中心</el-menu-item>
         </el-menu>
         <div class="user-actions">
