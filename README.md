@@ -1,6 +1,6 @@
 # AITravelPlanner
 
-[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/yourusername/AITravelPlanner.git)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg)](https://github.com/LittleExian/AITravelPlanner.git)
 
 ## 项目简介
 
